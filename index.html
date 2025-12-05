@@ -4,11 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MIDI 自動分頁抓取</title>
+    <title>MIDI 與全螢幕鏡像</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
+    <canvas id="videoCanvas"></canvas>
 
     <button id="showListBtn">📂 開啟 MIDI 列表 </button>
 
@@ -16,6 +17,9 @@
         <div class="list-header">
             <h3>🎵 MIDI 檔案庫</h3>
             <span id="closeList">&times;</span>
+        </div>
+        <div id="searchBox">
+            <input type="text" id="midiSearchInput" placeholder="搜尋標題或作曲者...">
         </div>
         <div id="midiList">
             <p style="text-align:center; padding:20px;">準備中...</p>
