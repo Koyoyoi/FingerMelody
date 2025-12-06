@@ -1,4 +1,23 @@
-// ================= Canvas & WebCam =================
+//  按鈕事件(midi list)
+import { loadMidiFiles, isFullyLoaded } from "./midiProcess.js";
+
+const showListBtn = document.getElementById("showListBtn");
+const midiListContainer = document.getElementById("midiListContainer");
+const closeList = document.getElementById("closeList");
+
+showListBtn.addEventListener("click", () => {
+    if (!isFullyLoaded) {
+        loadMidiFiles();
+    } else {
+        midiListContainer.style.display = "flex";
+    }
+});
+
+closeList.addEventListener("click", () => {
+    midiListContainer.style.display = "none";
+});
+
+//  Canvas & WebCam 
 const canvas = document.getElementById("videoCanvas");
 const ctx = canvas.getContext("2d");
 
@@ -44,22 +63,3 @@ function mainLoop() {
 }
 
 initCamera();
-
-// ================= 按鈕事件（調用 midiProcess.js） =================
-import { loadMidiFiles, isFullyLoaded } from "./midiProcess.js";
-
-const showListBtn = document.getElementById("showListBtn");
-const midiListContainer = document.getElementById("midiListContainer");
-const closeList = document.getElementById("closeList");
-
-showListBtn.addEventListener("click", () => {
-    if (!isFullyLoaded) {
-        loadMidiFiles();
-    } else {
-        midiListContainer.style.display = "flex";
-    }
-});
-
-closeList.addEventListener("click", () => {
-    midiListContainer.style.display = "none";
-});

@@ -4,6 +4,7 @@ export let isFullyLoaded = false;
 const midiListContainer = document.getElementById("midiListContainer");
 const midiListDiv = document.getElementById("midiList");
 const searchInput = document.getElementById("midiSearchInput");
+let midiEvent = [];
 
 // 排序
 function sortByTitle(data) {
@@ -14,7 +15,7 @@ function sortByTitle(data) {
     });
 }
 
-// 下載 MIDI 列表
+// MIDI 列表
 export async function loadMidiFiles() {
     if (isFullyLoaded) return;
 
@@ -83,7 +84,7 @@ export function renderMidiList(filteredList) {
         div.appendChild(titleDiv);
         div.appendChild(composerDiv);
 
-        div.addEventListener("click", () => Get_midEvent(mid, div));
+        div.addEventListener("click", () => Get_midiEvent(mid, div));
         midiListDiv.appendChild(div);
     });
 }
@@ -100,8 +101,8 @@ searchInput.addEventListener("input", () => {
     renderMidiList(filtered);
 });
 
-// 下載事件
-async function Get_midEvent(mid, divElement) {
+// 下載midi
+async function Get_midiEvent(mid, divElement) {
     const originalText = divElement.textContent;
     divElement.style.background = "#fff3cd";
     divElement.textContent = `⏳ 下載中... ${mid.title}`;
@@ -110,9 +111,9 @@ async function Get_midEvent(mid, divElement) {
         const url = `https://imuse.ncnu.edu.tw/Midi-library/api/midis/${mid.id}/events`;
         const res = await fetch(url);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const eventObj = await res.json();
+        midiEvent = await res.json();
 
-        console.log("下載 Event：", eventObj);
+        console.log("下載 Event：", midiEvent);
 
         divElement.style.background = "#d4edda";
         divElement.textContent = `✅ 完成: ${mid.title}`;
