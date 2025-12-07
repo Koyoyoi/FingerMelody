@@ -1,7 +1,7 @@
 import { loadMidiFiles, isFullyLoaded, initSynth, playMidi, stopMidi } from "./midiProcess.js";
 import { detectHand, setupMediaPipe } from "./MediaPipe/MediaPipe.js";
 
-// ---------------- MIDI 列表 ----------------
+// MIDI list
 const showListBtn = document.getElementById("showListBtn");
 const midiListContainer = document.getElementById("midiListContainer");
 const closeList = document.getElementById("closeList");
@@ -18,15 +18,12 @@ showListBtn.addEventListener("click", async () => {
 closeList.addEventListener("click", () => midiListContainer.style.display = "none");
 
 // 播放 MIDI
-playBtn.addEventListener("click", async () => {
-    await initSynth();
-    playMidi();
-});
+playBtn.addEventListener("click", async () => { playMidi(); });
 
 // 停止 MIDI
 stopBtn.addEventListener("click", () => stopMidi());
 
-// ---------------- Canvas & WebCam ----------------
+// Canvas 
 const canvas = document.getElementById("videoCanvas");
 const ctx = canvas.getContext("2d");
 
@@ -80,6 +77,7 @@ async function mainLoop() {
 // 初始化系統
 async function initSystem() {
     await setupMediaPipe();
+    initSynth();
     initCamera();
 }
 
