@@ -39,6 +39,9 @@ export function playMidi() {
     scheduledNotes = [];
 
     midiEvent.forEach(event => {
+        // 設定該事件的 channel 與 program
+        synth.programChange(event.channel || 0, event.program || 0);
+
         const noteOnTime = startTime + event.time;
         const noteOffTime = noteOnTime + event.duration;
 
@@ -190,7 +193,7 @@ async function Get_midiEvent(mid, divElement) {
             divElement.textContent = originalText;
         }, 1500);
 
-        console.log("MIDI Event 已載入");
+        console.log("MIDI Event 已載入", midiEvent);
 
     } catch (err) {
         console.error("❌ 下載 MIDI 失敗:", err);
