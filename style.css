@@ -56,26 +56,7 @@ html, body {
     color: #fff;
 }
 
-/* MIDI 清單容器 */
-#midiListContainer {
-    display: none;
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 85%;
-    max-width: 600px;
-    height: 75vh;
-    background: #fff;
-    color: #000;
-    border-radius: 12px;
-    border: 1px solid #ddd;
-    overflow: hidden;
-    flex-direction: column;
-    z-index: 20;
-}
-
-/* 清單標題 */
+/* list title */
 .list-header {
     display: flex;
     justify-content: space-between;
@@ -108,7 +89,25 @@ html, body {
     border: 1px solid #ccc;
 }
 
-/* MIDI 清單 */
+/* MIDI list */
+#midiListContainer {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 85%;
+    max-width: 600px;
+    height: 75vh;
+    background: #fff;
+    color: #000;
+    border-radius: 12px;
+    border: 1px solid #ddd;
+    overflow: hidden;
+    flex-direction: column;
+    z-index: 20;
+}
+
 #midiList {
     overflow-y: auto;
     flex: 1;
