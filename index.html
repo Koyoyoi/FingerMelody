@@ -1,18 +1,24 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
-
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MIDI Hand Player</title>
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
+
+    <!-- Canvas 顯示攝影機 -->
     <canvas id="videoCanvas"></canvas>
 
-    <button id="showListBtn">📂 開啟 MIDI 列表 </button>
+    <!-- 控制按鈕 -->
+    <div id="controls">
+        <button id="playBtn">▶ 播放</button>
+        <button id="stopBtn">⏹ 停止</button>
+        <button id="showListBtn">📂 MIDI 列表</button>
+    </div>
 
+    <!-- MIDI 清單容器 -->
     <div id="midiListContainer">
         <div class="list-header">
             <h3>🎵 MIDI 檔案庫</h3>
@@ -26,7 +32,7 @@
         </div>
     </div>
 
+    <!-- 主程式 -->
     <script type="module" src="main.js"></script>
 </body>
-
 </html>

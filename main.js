@@ -1,25 +1,32 @@
-import { loadMidiFiles, isFullyLoaded } from "./midiProcess.js";
+import { loadMidiFiles, isFullyLoaded, initSynth, playMidi, stopMidi } from "./midiProcess.js";
 import { detectHand, setupMediaPipe } from "./MediaPipe/MediaPipe.js";
 
-// get misi list element
-const showList = document.getElementById("showListBtn");
-const midiList = document.getElementById("midiListContainer");
+// ---------------- MIDI 列表 ----------------
+const showListBtn = document.getElementById("showListBtn");
+const midiListContainer = document.getElementById("midiListContainer");
 const closeList = document.getElementById("closeList");
+const playBtn = document.getElementById("playBtn");
+const stopBtn = document.getElementById("stopBtn");
 
-// 按鈕事件(midi list)
-showList.addEventListener("click", () => {
-    if (!isFullyLoaded) {
-        loadMidiFiles();
-    } else {
-        midiList.style.display = "flex";
-    }
+// 開啟 MIDI 清單
+showListBtn.addEventListener("click", async () => {
+    if (!isFullyLoaded) await loadMidiFiles();
+    else midiListContainer.style.display = "flex";
 });
 
-closeList.addEventListener("click", () => {
-    midiList.style.display = "none";
+// 關閉 MIDI 清單
+closeList.addEventListener("click", () => midiListContainer.style.display = "none");
+
+// 播放 MIDI
+playBtn.addEventListener("click", async () => {
+    await initSynth();
+    playMidi();
 });
 
-// Canvas
+// 停止 MIDI
+stopBtn.addEventListener("click", () => stopMidi());
+
+// ---------------- Canvas & WebCam ----------------
 const canvas = document.getElementById("videoCanvas");
 const ctx = canvas.getContext("2d");
 
@@ -28,8 +35,9 @@ function resizeCanvas() {
     canvas.height = window.innerHeight;
 }
 window.addEventListener("resize", resizeCanvas);
+resizeCanvas();
 
-// WebCam 
+// WebCam
 export let video = document.createElement("video");
 video.autoplay = true;
 video.playsInline = true;
@@ -53,13 +61,10 @@ export let handData = { "Left": [], "Right": [] };
 async function mainLoop() {
     await detectHand();
 
-    if (handData.Left.length || handData.Right.length)
-        console.log(handData);
-    
     // reset hands data
     handData.Left = [];
     handData.Right = [];
-    
+
     // set up video stream
     const { videoWidth: vw, videoHeight: vh } = video;
     const { width: cw, height: ch } = canvas;
@@ -72,9 +77,11 @@ async function mainLoop() {
     requestAnimationFrame(mainLoop);
 }
 
+// 初始化系統
 async function initSystem() {
     await setupMediaPipe();
     initCamera();
 }
 
-window.addEventListener('DOMContentLoaded', initSystem());
+// DOM 載入完成後啟動
+window.addEventListener('DOMContentLoaded', initSystem);
