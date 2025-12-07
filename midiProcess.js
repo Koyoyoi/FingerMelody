@@ -9,7 +9,7 @@ const AC = new (window.AudioContext || window.webkitAudioContext)();
 
 // masterGain：控制整體音量
 const masterGain = AC.createGain();
-masterGain.gain.value = 1.8; 
+masterGain.gain.value = 1.8;
 
 // 輕壓縮器，提高音量感知並防止爆音
 const comp = AC.createDynamicsCompressor();
@@ -54,6 +54,7 @@ export async function initSynth() {
 }
 
 // === MIDI 播放 / 停止 ===
+import { handData } from './main.js';
 export let midiEvent = [];
 
 export function playMidi() {
@@ -65,34 +66,66 @@ export function playMidi() {
     scheduledNotes.forEach(id => clearTimeout(id));
     scheduledNotes = [];
 
-    midiEvent.forEach(event => {
-        synth.programChange(event.channel || 0, event.program || 0);
+    // midiEvent 現在是二維陣列：每個元素都是同時間的事件群
+    midiEvent.forEach(group => {
+        if (!group || group.length === 0) return;
 
-        const noteOnTime = startTime + event.time;
-        const noteOffTime = noteOnTime + event.duration;
+        // 所有事件使用同一個 time
+        const time = group[0].time;
 
-        // 排程 noteOn
-        const onId = setTimeout(() => {
-            synth.noteOn(event.channel || 0, event.midi, Math.max(Math.floor(event.velocity * 127), 100));
-        }, (noteOnTime - AC.currentTime) * 1000);
-        scheduledNotes.push(onId);
+        group.forEach(event => {
+            synth.programChange(event.channel || 0, event.program || 0);
 
-        // 排程 noteOff
-        const offId = setTimeout(() => {
-            synth.noteOff(event.channel || 0, event.midi);
-        }, (noteOffTime - AC.currentTime) * 1000);
-        scheduledNotes.push(offId);
+            const noteOnTime = startTime + time;
+            const noteOffTime = noteOnTime + event.duration;
+
+            // 排程 noteOn
+            const onId = setTimeout(() => {
+                synth.noteOn(
+                    event.channel || 0,
+                    event.midi,
+                    Math.max(Math.floor(event.velocity * 127), 100)
+                );
+            }, (noteOnTime - AC.currentTime) * 1000);
+            scheduledNotes.push(onId);
+
+            // 排程 noteOff
+            const offId = setTimeout(() => {
+                synth.noteOff(event.channel || 0, event.midi);
+            }, (noteOffTime - AC.currentTime) * 1000);
+            scheduledNotes.push(offId);
+        });
     });
 
-    console.log("▶️ MIDI 播放中");
+    console.log("MIDI 播放中");
 }
 
 export function stopMidi() {
     scheduledNotes.forEach(id => clearTimeout(id));
     scheduledNotes = [];
-    console.log("⏹ MIDI 停止");
+    console.log("MIDI 停止");
 }
 
+let midiIndex = 0; // ← 新增的全域索引
+export function handPlayMidi() {
+    if (!synth || !midiEvent || midiEvent.length === 0) return;
+
+    const events = midiEvent[midiIndex]; // ← 一組 event (同時間)
+
+    events.forEach(event => {
+        const ch = event.channel || 0;
+        const vel = Math.floor((event.velocity || 0.8) * 127);
+
+        synth.noteOn(ch, event.midi, vel);
+
+        setTimeout(() => {
+            synth.noteOff(ch, event.midi);
+        }, event.duration * 1000);
+    });
+
+    midiIndex++;
+    if (midiIndex >= midiEvent.length) midiIndex = 0;
+}
 
 // MIDI list
 export let isFullyLoaded = false;
@@ -199,6 +232,7 @@ searchInput.addEventListener("input", () => {
 // 下載 MIDI Events
 async function Get_midiEvent(mid, divElement) {
     stopMidi();
+    midiIndex = 0;
     const originalText = divElement.textContent;
     divElement.style.background = "#fff3cd";
     divElement.textContent = `⏳ 下載中... ${mid.title}`;
@@ -209,8 +243,23 @@ async function Get_midiEvent(mid, divElement) {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
 
-        // 取出 events 陣列給 midiEvent
-        midiEvent = Array.isArray(json.events) ? json.events : [];
+        // 取出 events 並 group by time
+        if (Array.isArray(json.events)) {
+            const groups = new Map();
+
+            json.events.forEach(ev => {
+                const t = ev.time;
+                if (!groups.has(t)) groups.set(t, []);
+                groups.get(t).push(ev);
+            });
+
+            // 依 time 排序後轉成二維陣列
+            midiEvent = [...groups.entries()]
+                .sort((a, b) => a[0] - b[0])
+                .map(entry => entry[1]);
+        } else {
+            midiEvent = [];
+        }
 
         divElement.style.background = "#d4edda";
         divElement.textContent = `✅ 完成: ${mid.title}`;
@@ -220,11 +269,10 @@ async function Get_midiEvent(mid, divElement) {
             divElement.textContent = originalText;
         }, 1500);
 
-        console.log("MIDI Event 已載入", midiEvent);
-
     } catch (err) {
         console.error("❌ 下載 MIDI 失敗:", err);
         divElement.style.color = "red";
         divElement.textContent = `❌ 下載失敗`;
     }
+
 }

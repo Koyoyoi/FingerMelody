@@ -1,4 +1,4 @@
-import { loadMidiFiles, isFullyLoaded, initSynth, playMidi, stopMidi } from "./midiProcess.js";
+import { loadMidiFiles, isFullyLoaded, initSynth, playMidi, stopMidi, handPlayMidi } from "./midiProcess.js";
 import { detectHand, setupMediaPipe } from "./MediaPipe/MediaPipe.js";
 
 // MIDI list
@@ -53,26 +53,59 @@ async function initCamera() {
     }
 }
 
+function isPinched(hand) {
+    if (!hand || hand.length < 9) return false;
+
+    const p4 = hand[4]; // thumb tip
+    const p8 = hand[8]; // index tip
+
+    const dx = p4[0] - p8[0];
+    const dy = p4[1] - p8[1];
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    return dist < 40; // 閾值可調
+}
+
 // main Loop
 export let handData = { "Left": [], "Right": [] };
-async function mainLoop() {
-    await detectHand();
+let pinchActive = false;
 
+async function mainLoop() {
     // reset hands data
     handData.Left = [];
     handData.Right = [];
+    await detectHand();
+
+    const right = handData.Right;
+
+    // ---- pinch detect ----
+    if (right && right.length > 0) {
+        const pinched = isPinched(right);
+
+        if (pinched && !pinchActive) {
+            pinchActive = true;
+            handPlayMidi();           // <<<< ---- 只在 pinch 時觸發
+        }
+
+        if (!pinched) {
+            pinchActive = false;
+        }
+    }
+
+
 
     // set up video stream
     const { videoWidth: vw, videoHeight: vh } = video;
     const { width: cw, height: ch } = canvas;
 
     const ctx = canvas.getContext("2d");
-    ctx.setTransform(-1, 0, 0, 1, cw, 0); // 水平翻轉 + 移位置
+    ctx.setTransform(-1, 0, 0, 1, cw, 0);
     ctx.clearRect(0, 0, cw, ch);
     ctx.drawImage(video, 0, 0, cw, ch);
 
     requestAnimationFrame(mainLoop);
 }
+
 
 // 初始化系統
 async function initSystem() {
