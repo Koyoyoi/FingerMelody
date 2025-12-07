@@ -1,45 +1,71 @@
-// ==== SpessaSynth 相關 ====
 import * as spessasynthLib from 'https://cdn.jsdelivr.net/npm/spessasynth_lib@4.0.18/+esm';
 const { WorkletSynthesizer } = spessasynthLib;
 
 const SOUND_FONT_URL = "https://spessasus.github.io/SpessaSynth/soundfonts/GeneralUserGS.sf3";
 const WORKLET_URL = "https://cdn.jsdelivr.net/npm/spessasynth_lib@4.0.18/dist/spessasynth_processor.min.js";
 
-let audioContext;
-let synth;
-let scheduledNotes = []; // 儲存 setTimeout id
+// === 全域 AudioContext 與效果 ===
+const AC = new (window.AudioContext || window.webkitAudioContext)();
 
-// 初始化 Synth
+// masterGain：控制整體音量
+const masterGain = AC.createGain();
+masterGain.gain.value = 1.8; 
+
+// 輕壓縮器，提高音量感知並防止爆音
+const comp = AC.createDynamicsCompressor();
+comp.threshold.value = -18;
+comp.knee.value = 6;
+comp.ratio.value = 2;
+comp.attack.value = 0.005;
+comp.release.value = 0.1;
+
+// 連接順序：comp -> masterGain -> destination
+comp.connect(masterGain).connect(AC.destination);
+
+// 暴露全域方便偵錯
+window.AC = AC;
+window.comp = comp;
+window.masterGain = masterGain;
+
+let synth;
+let scheduledNotes = [];
+
+// === 初始化 SpessaSynth ===
 export async function initSynth() {
     if (synth) return;
 
-    audioContext = new AudioContext();
-    await audioContext.audioWorklet.addModule(WORKLET_URL);
+    await AC.audioWorklet.addModule(WORKLET_URL);
 
-    synth = new WorkletSynthesizer(audioContext);
-    synth.connect(audioContext.destination);
+    synth = new WorkletSynthesizer(AC);
+    synth.connect(comp); // connect 到壓縮器
 
+    // 載入 SoundFont
     const sfResponse = await fetch(SOUND_FONT_URL);
     const sfBuffer = await sfResponse.arrayBuffer();
     await synth.soundBankManager.addSoundBank(sfBuffer, "main");
 
+    try {
+        synth.soundBankManager?.setDefaultSoundBank?.('main');
+    } catch (e) {
+        console.warn('setDefaultSoundBank failed:', e);
+    }
+
     console.log("🎹 Synth 初始化完成");
 }
 
-// ==== MIDI 播放 / 停止 ====
-export let midiEvent = []; // 存放下載的 MIDI events
+// === MIDI 播放 / 停止 ===
+export let midiEvent = [];
 
 export function playMidi() {
     if (!synth || !midiEvent || midiEvent.length === 0) return;
 
-    const startTime = audioContext.currentTime;
+    const startTime = AC.currentTime;
 
     // 清除上次排程
     scheduledNotes.forEach(id => clearTimeout(id));
     scheduledNotes = [];
 
     midiEvent.forEach(event => {
-        // 設定該事件的 channel 與 program
         synth.programChange(event.channel || 0, event.program || 0);
 
         const noteOnTime = startTime + event.time;
@@ -47,14 +73,14 @@ export function playMidi() {
 
         // 排程 noteOn
         const onId = setTimeout(() => {
-            synth.noteOn(event.channel || 0, event.midi, Math.floor(event.velocity * 127));
-        }, (noteOnTime - audioContext.currentTime) * 1000);
+            synth.noteOn(event.channel || 0, event.midi, Math.max(Math.floor(event.velocity * 127), 100));
+        }, (noteOnTime - AC.currentTime) * 1000);
         scheduledNotes.push(onId);
 
         // 排程 noteOff
         const offId = setTimeout(() => {
             synth.noteOff(event.channel || 0, event.midi);
-        }, (noteOffTime - audioContext.currentTime) * 1000);
+        }, (noteOffTime - AC.currentTime) * 1000);
         scheduledNotes.push(offId);
     });
 
@@ -67,7 +93,8 @@ export function stopMidi() {
     console.log("⏹ MIDI 停止");
 }
 
-// ==== MIDI 列表 / 搜尋 / 下載 ====
+
+// MIDI list
 export let isFullyLoaded = false;
 const midiListContainer = document.getElementById("midiListContainer");
 const midiListDiv = document.getElementById("midiList");
@@ -169,7 +196,7 @@ searchInput.addEventListener("input", () => {
     renderMidiList(filtered);
 });
 
-// 下載 MIDI
+// 下載 MIDI Events
 async function Get_midiEvent(mid, divElement) {
     stopMidi();
     const originalText = divElement.textContent;
