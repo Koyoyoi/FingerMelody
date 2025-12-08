@@ -1,7 +1,7 @@
 import * as spessasynthLib from 'https://cdn.jsdelivr.net/npm/spessasynth_lib@4.0.18/+esm';
 const { WorkletSynthesizer } = spessasynthLib;
 
-// === 全域 AudioContext 與效果 ===
+//  全域 AudioContext 與效果 
 const AC = new (window.AudioContext || window.webkitAudioContext)();
 
 // masterGain：控制整體音量
@@ -20,9 +20,9 @@ comp.release.value = 0.1;
 comp.connect(masterGain).connect(AC.destination);
 
 let synth;
-let scheduledNotes = [];
 
-// === 初始化 SpessaSynth ===
+
+// 初始化 SpessaSynth 
 export async function initSynth() {
     const SOUND_FONT_URL = "https://spessasus.github.io/SpessaSynth/soundfonts/GeneralUserGS.sf3";
     const WORKLET_URL = "https://cdn.jsdelivr.net/npm/spessasynth_lib@4.0.18/dist/spessasynth_processor.min.js";
@@ -46,10 +46,11 @@ export async function initSynth() {
     console.log("🎹 Synth 初始化完成");
 }
 
-// === MIDI 播放 / 停止 ===
+// MIDI 播放 / 停止
 let midiEvent = [];
 let midiIndex = 0;
-let activeNotes = []
+let activeNotes = [];
+let scheduledNotes = [];
 
 export function playMidi() {
     if (!synth || !midiEvent || midiEvent.length === 0) return;
@@ -147,7 +148,6 @@ export function handPlayMidi() {
     // 更新索引
     midiIndex = (midiIndex + 1) % midiEvent.length;
 }
-
 
 export function relAllNotes() {
     activeNotes.forEach(n => {
