@@ -178,7 +178,6 @@ export function midiCC(handData, refx) {
 
     // 映射到 Channel Pressure (0~127)
     const pressure = Math.floor(64 + ratio * 63); // 中央64，左右±63
-    console.log(pressure)
 
     activeNotes.forEach(n => {
         synth.channelPressure(n.ch, pressure);
@@ -294,6 +293,12 @@ async function Get_midiEvent(mid, divElement) {
     const originalText = divElement.textContent;
     divElement.style.background = "#fff3cd";
     divElement.textContent = `⏳ 下載中... ${mid.title}`;
+
+    const titleDiv = document.getElementById("songTitle");
+    if (titleDiv) {
+        titleDiv.textContent = mid.title;
+        titleDiv.style.display = "block";  
+    }
 
     try {
         const url = `https://imuse.ncnu.edu.tw/Midi-library/api/midis/${mid.id}/events`;

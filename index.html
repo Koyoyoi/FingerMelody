@@ -1,15 +1,20 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MIDI Hand Player</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
     <!-- Canvas 顯示攝影機 -->
     <canvas id="videoCanvas"></canvas>
+
+    <!-- Song 標題 overlay -->
+    <div id="songTitle"></div>
 
     <!-- 控制按鈕 -->
     <div id="controls">
@@ -32,7 +37,9 @@
         </div>
     </div>
 
+
     <!-- 主程式 -->
     <script type="module" src="main.js"></script>
 </body>
+
 </html>
