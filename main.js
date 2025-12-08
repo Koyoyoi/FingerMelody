@@ -1,4 +1,5 @@
-import { loadMidiFiles, isFullyLoaded, initSynth, playMidi, stopMidi, handPlayMidi, relAllNotes } from "./midiProcess.js";
+import { loadMidiFiles, initSynth, 
+    playMidi, stopMidi, handPlayMidi, relAllNotes, updVol } from "./midiProcess.js";
 import { detectHand, setupMediaPipe } from "./MediaPipe/MediaPipe.js";
 
 // MIDI list
@@ -10,8 +11,8 @@ const stopBtn = document.getElementById("stopBtn");
 
 // 開啟 MIDI 清單
 showListBtn.addEventListener("click", async () => {
-    if (!isFullyLoaded) await loadMidiFiles();
-    else midiListContainer.style.display = "flex";
+    await loadMidiFiles();
+    midiListContainer.style.display = "flex";
 });
 
 // 關閉 MIDI 清單
@@ -82,18 +83,22 @@ async function mainLoop() {
     if (right && right.length > 0) {
         const pinched = isPinched(right);
 
+        // 更新音量
+        updVol(handData);
+
         // Pinch 開始
         if (pinched && !pinchActive) {
             pinchActive = true;
-            handPlayMidi();    // 播一組 notes，noteOn
+            handPlayMidi(handData);
         }
 
-        // Pinch 結束（放開）
+        // Pinch 結束
         if (!pinched && pinchActive) {
             pinchActive = false;
-            relAllNotes(); // <<< 放開時 noteOff
+            relAllNotes();
         }
     }
+
 
 
 

@@ -19,11 +19,6 @@ comp.release.value = 0.1;
 // 連接順序：comp -> masterGain -> destination
 comp.connect(masterGain).connect(AC.destination);
 
-// 暴露全域方便偵錯
-window.AC = AC;
-window.comp = comp;
-window.masterGain = masterGain;
-
 let synth;
 let scheduledNotes = [];
 
@@ -31,8 +26,6 @@ let scheduledNotes = [];
 export async function initSynth() {
     const SOUND_FONT_URL = "https://spessasus.github.io/SpessaSynth/soundfonts/GeneralUserGS.sf3";
     const WORKLET_URL = "https://cdn.jsdelivr.net/npm/spessasynth_lib@4.0.18/dist/spessasynth_processor.min.js";
-
-    if (synth) return;
 
     await AC.audioWorklet.addModule(WORKLET_URL);
 
@@ -54,7 +47,6 @@ export async function initSynth() {
 }
 
 // === MIDI 播放 / 停止 ===
-import { handData } from './main.js';
 let midiEvent = [];
 let midiIndex = 0;
 let activeNotes = []
@@ -136,24 +128,26 @@ export function stopMidi() {
 }
 
 export function handPlayMidi() {
-    if (!synth || !midiEvent || midiEvent.length === 0) return;
+    if (!synth || !midiEvent?.length) return;
 
     const events = midiEvent[midiIndex];
+    if (!events?.length) return;
 
-    events.forEach(event => {
-        const ch = event.channel || 0;
-        const vel = Math.floor(event.velocity * 127);
+    // 播放當前 MIDI 事件
+    events.forEach(evt => {
+        const ch = evt.channel || 0;
+        const vel = Math.floor(evt.velocity * 127);
 
-        synth.programChange(ch, event.program || 0);
-        synth.noteOn(ch, event.midi, vel);
+        synth.programChange(ch, evt.program || 0);
+        synth.noteOn(ch, evt.midi, vel);
 
-        // 記錄正在發聲的音
-        activeNotes.push({ ch, midi: event.midi });
+        activeNotes.push({ ch, midi: evt.midi });
     });
 
-    midiIndex++;
-    if (midiIndex >= midiEvent.length) midiIndex = 0;
+    // 更新索引
+    midiIndex = (midiIndex + 1) % midiEvent.length;
 }
+
 
 export function relAllNotes() {
     activeNotes.forEach(n => {
@@ -162,9 +156,22 @@ export function relAllNotes() {
     activeNotes = [];
 }
 
+export function updVol(handData) {
+    if (!handData?.Left?.[8]?.[1]) return;
+
+    const y = handData.Left[8][1];
+    let vol = 1 - (y / window.innerHeight);
+    vol = Math.max(0, Math.min(1, vol)) + 0.1;
+    const ccVal = Math.floor(vol * 127);
+
+    // 對所有正在發聲音符送 CC#11
+    activeNotes.forEach(n => {
+        synth.controllerChange(n.ch, 11, ccVal);
+    });
+}
 
 // MIDI list
-export let isFullyLoaded = false;
+let isFullyLoaded = false;
 const midiListContainer = document.getElementById("midiListContainer");
 const midiListDiv = document.getElementById("midiList");
 const searchInput = document.getElementById("midiSearchInput");
