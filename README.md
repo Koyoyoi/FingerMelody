@@ -18,6 +18,6 @@
 ## 🌐 線上 Demo
 
 你可以直接在 GitHub Pages 启动 FingerMusic：  
-👉 https://koyoyoi.github.io/FingerMusic/
+👉 https://koyoyoi.github.io/FingerMelody/
 
 ---
