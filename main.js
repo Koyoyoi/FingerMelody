@@ -1,4 +1,4 @@
-import { loadMidiFiles, isFullyLoaded, initSynth, playMidi, stopMidi, handPlayMidi } from "./midiProcess.js";
+import { loadMidiFiles, isFullyLoaded, initSynth, playMidi, stopMidi, handPlayMidi, relAllNotes } from "./midiProcess.js";
 import { detectHand, setupMediaPipe } from "./MediaPipe/MediaPipe.js";
 
 // MIDI list
@@ -82,13 +82,16 @@ async function mainLoop() {
     if (right && right.length > 0) {
         const pinched = isPinched(right);
 
+        // Pinch 開始
         if (pinched && !pinchActive) {
             pinchActive = true;
-            handPlayMidi();           // <<<< ---- 只在 pinch 時觸發
+            handPlayMidi();    // 播一組 notes，noteOn
         }
 
-        if (!pinched) {
+        // Pinch 結束（放開）
+        if (!pinched && pinchActive) {
             pinchActive = false;
+            relAllNotes(); // <<< 放開時 noteOff
         }
     }
 

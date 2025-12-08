@@ -1,9 +1,6 @@
 import * as spessasynthLib from 'https://cdn.jsdelivr.net/npm/spessasynth_lib@4.0.18/+esm';
 const { WorkletSynthesizer } = spessasynthLib;
 
-const SOUND_FONT_URL = "https://spessasus.github.io/SpessaSynth/soundfonts/GeneralUserGS.sf3";
-const WORKLET_URL = "https://cdn.jsdelivr.net/npm/spessasynth_lib@4.0.18/dist/spessasynth_processor.min.js";
-
 // === 全域 AudioContext 與效果 ===
 const AC = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -32,6 +29,9 @@ let scheduledNotes = [];
 
 // === 初始化 SpessaSynth ===
 export async function initSynth() {
+    const SOUND_FONT_URL = "https://spessasus.github.io/SpessaSynth/soundfonts/GeneralUserGS.sf3";
+    const WORKLET_URL = "https://cdn.jsdelivr.net/npm/spessasynth_lib@4.0.18/dist/spessasynth_processor.min.js";
+
     if (synth) return;
 
     await AC.audioWorklet.addModule(WORKLET_URL);
@@ -55,22 +55,22 @@ export async function initSynth() {
 
 // === MIDI 播放 / 停止 ===
 import { handData } from './main.js';
-export let midiEvent = [];
+let midiEvent = [];
+let midiIndex = 0;
+let activeNotes = []
 
 export function playMidi() {
     if (!synth || !midiEvent || midiEvent.length === 0) return;
 
     const startTime = AC.currentTime;
 
-    // 清除上次排程
-    scheduledNotes.forEach(id => clearTimeout(id));
-    scheduledNotes = [];
+    // 清除上次排程前：不能直接 clear，要先 noteOff
+    stopMidi();  // <<< 自動完整停止
 
-    // midiEvent 現在是二維陣列：每個元素都是同時間的事件群
+    // midiEvent 是二維陣列：每組同時間事件
     midiEvent.forEach(group => {
         if (!group || group.length === 0) return;
 
-        // 所有事件使用同一個 time
         const time = group[0].time;
 
         group.forEach(event => {
@@ -79,20 +79,37 @@ export function playMidi() {
             const noteOnTime = startTime + time;
             const noteOffTime = noteOnTime + event.duration;
 
-            // 排程 noteOn
+            // --- 排程 noteOn ---
             const onId = setTimeout(() => {
+                const ch = event.channel || 0;
+                const midi = event.midi;
+
                 synth.noteOn(
-                    event.channel || 0,
-                    event.midi,
+                    ch,
+                    midi,
                     Math.max(Math.floor(event.velocity * 127), 100)
                 );
+
+                // 記錄發聲中的音
+                activeNotes.push({ ch, midi });
+
             }, (noteOnTime - AC.currentTime) * 1000);
+
             scheduledNotes.push(onId);
 
-            // 排程 noteOff
+            // --- 排程 noteOff ---
             const offId = setTimeout(() => {
-                synth.noteOff(event.channel || 0, event.midi);
+                const ch = event.channel || 0;
+                const midi = event.midi;
+
+                synth.noteOff(ch, midi);
+
+                // 從 activeNotes 移除
+                activeNotes = activeNotes.filter(
+                    n => !(n.ch === ch && n.midi === midi)
+                );
             }, (noteOffTime - AC.currentTime) * 1000);
+
             scheduledNotes.push(offId);
         });
     });
@@ -101,31 +118,50 @@ export function playMidi() {
 }
 
 export function stopMidi() {
+    // ① 先完整 noteOff
+    activeNotes.forEach(n => {
+        try {
+            synth.noteOff(n.ch, n.midi);
+        } catch (e) {
+            console.warn("noteOff error:", e);
+        }
+    });
+    activeNotes = [];
+
+    // ② 再清除所有排程
     scheduledNotes.forEach(id => clearTimeout(id));
     scheduledNotes = [];
+
     console.log("MIDI 停止");
 }
 
-let midiIndex = 0; // ← 新增的全域索引
 export function handPlayMidi() {
     if (!synth || !midiEvent || midiEvent.length === 0) return;
 
-    const events = midiEvent[midiIndex]; // ← 一組 event (同時間)
+    const events = midiEvent[midiIndex];
 
     events.forEach(event => {
         const ch = event.channel || 0;
-        const vel = Math.floor((event.velocity || 0.8) * 127);
+        const vel = Math.floor(event.velocity * 127);
 
+        synth.programChange(ch, event.program || 0);
         synth.noteOn(ch, event.midi, vel);
 
-        setTimeout(() => {
-            synth.noteOff(ch, event.midi);
-        }, event.duration * 1000);
+        // 記錄正在發聲的音
+        activeNotes.push({ ch, midi: event.midi });
     });
 
     midiIndex++;
     if (midiIndex >= midiEvent.length) midiIndex = 0;
 }
+
+export function relAllNotes() {
+    activeNotes.forEach(n => {
+        synth.noteOff(n.ch, n.midi);
+    });
+    activeNotes = [];
+}
+
 
 // MIDI list
 export let isFullyLoaded = false;
