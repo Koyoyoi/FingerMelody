@@ -11,13 +11,12 @@
 - 可依手指位置動態調整音量或 MIDI CC
 - 支援自動載入 MIDI 檔案並播放
 - 完全 Web 端運作：不需安裝程式、打開瀏覽器即可使用
-- 視覺化顯示手指關鍵點（如 Left[8], Right[4], Right[8]）
 
 ---
 
 ## 🌐 線上 Demo
 
-你可以直接在 GitHub Pages 启动 FingerMusic：  
+你可以直接在 GitHub Pages 启动 FingerMelody：  
 👉 https://koyoyoi.github.io/FingerMelody/
 
 ---
