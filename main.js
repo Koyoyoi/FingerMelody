@@ -1,5 +1,7 @@
-import { loadMidiFiles, initSynth, 
-    playMidi, stopMidi, handPlayMidi, relAllNotes, updVol } from "./midiProcess.js";
+import {
+    loadMidiFiles, initSynth,
+    playMidi, stopMidi, handPlayMidi, relAllNotes, midiCC
+} from "./midiProcess.js";
 import { detectHand, setupMediaPipe } from "./MediaPipe/MediaPipe.js";
 
 // MIDI list
@@ -70,6 +72,7 @@ function isPinched(hand) {
 // main Loop
 export let handData = { "Left": [], "Right": [] };
 let pinchActive = false;
+let refx;
 
 async function mainLoop() {
     // reset hands data
@@ -79,16 +82,19 @@ async function mainLoop() {
 
     const right = handData.Right;
 
-    // ---- pinch detect ----
+    // pinch detect 
     if (right && right.length > 0) {
         const pinched = isPinched(right);
 
         // 更新音量
-        updVol(handData);
+        midiCC(handData, refx);
 
         // Pinch 開始
         if (pinched && !pinchActive) {
             pinchActive = true;
+            if (handData?.Left?.[8]?.[0] != null) {
+                refx = handData.Left[8][0]; 
+            }
             handPlayMidi(handData);
         }
 
@@ -99,11 +105,7 @@ async function mainLoop() {
         }
     }
 
-
-
-
     // set up video stream
-    const { videoWidth: vw, videoHeight: vh } = video;
     const { width: cw, height: ch } = canvas;
 
     const ctx = canvas.getContext("2d");
@@ -113,7 +115,6 @@ async function mainLoop() {
 
     requestAnimationFrame(mainLoop);
 }
-
 
 // 初始化系統
 async function initSystem() {

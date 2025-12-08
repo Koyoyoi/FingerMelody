@@ -156,17 +156,32 @@ export function relAllNotes() {
     activeNotes = [];
 }
 
-export function updVol(handData) {
-    if (!handData?.Left?.[8]?.[1]) return;
+export function midiCC(handData, refx) {
+    if (!handData?.Left?.[8]) return;
 
-    const y = handData.Left[8][1];
+    const x = handData.Left[8][0]; // X 座標
+    const y = handData.Left[8][1]; // Y 座標
+
+    // 音量 (CC#11)
     let vol = 1 - (y / window.innerHeight);
-    vol = Math.max(0, Math.min(1, vol)) + 0.1;
+    vol = Math.max(0, Math.min(1, vol)) + 0.1; // 避免太小
     const ccVal = Math.floor(vol * 127);
 
-    // 對所有正在發聲音符送 CC#11
     activeNotes.forEach(n => {
         synth.controllerChange(n.ch, 11, ccVal);
+    });
+
+    // Channel Pressure 
+    const range = 100; // ±200px
+    let ratio = (x - refx) / range; // -1 ~ 1
+    ratio = Math.max(-1, Math.min(1, ratio));
+
+    // 映射到 Channel Pressure (0~127)
+    const pressure = Math.floor(64 + ratio * 63); // 中央64，左右±63
+    console.log(pressure)
+
+    activeNotes.forEach(n => {
+        synth.channelPressure(n.ch, pressure);
     });
 }
 
