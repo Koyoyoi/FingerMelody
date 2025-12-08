@@ -1,6 +1,6 @@
-# FingerMusic 🎶
+# FingerMelody 🎶
 
-**FingerMusic** 是一個以「手勢」控制 MIDI 音符與參數的 Web 互動音樂專案。  
+**FingerMelody** 是一個以「手勢」控制 MIDI 音符與參數的 Web 互動音樂專案。  
 透過攝影機偵測手指位置與 pinch 動作，即可在瀏覽器中即時演奏。
 
 ---
