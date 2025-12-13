@@ -28,23 +28,19 @@ export async function setupMediaPipe() {
 export async function detectHand() {
     if (!handLandmarker) return;
 
-    // 提供 IMAGE_DIMENSIONS，避免 NORM_RECT 警告
-    let data = handLandmarker.detectForVideo(video, performance.now(), {
-        image: video,
-        imageWidth: video.videoWidth,
-        imageHeight: video.videoHeight
-    });
+    let data = handLandmarker.detectForVideo(video, performance.now(), { width: video.videoWidth, height: video.videoHeight });
 
     const handPoints = data.landmarks;
     const handednesses = data.handednesses;
 
+    // 將每隻手的座標轉換為像素座標並分類左右手
     for (let i = 0; i < handednesses.length; i++) {
         let points = [];
         let left_or_right = String(handednesses[i][0].categoryName);
         for (let p of handPoints[i]) {
-            points.push([p.x * video.videoWidth, p.y * video.videoHeight, p.z * 10]);
+            p = [p.x * video.videoWidth, p.y * video.videoHeight, p.z * 10];
+            points.push(p);
         }
         handData[left_or_right] = points;
     }
 }
-
