@@ -1,27 +1,35 @@
 import * as spessasynthLib from 'https://cdn.jsdelivr.net/npm/spessasynth_lib@4.0.18/+esm';
 const { WorkletSynthesizer } = spessasynthLib;
 
-//  全域 AudioContext 與效果 
-const AC = new (window.AudioContext || window.webkitAudioContext)();
+let AC; // 延遲建立
+let masterGain, comp;
 
-// masterGain：控制整體音量
-const masterGain = AC.createGain();
-masterGain.gain.value = 1.8;
+function setupAC() {
+    if (!AC) {
+        AC = new (window.AudioContext || window.webkitAudioContext)();
 
-// 輕壓縮器，提高音量感知並防止爆音
-const comp = AC.createDynamicsCompressor();
-comp.threshold.value = -18;
-comp.knee.value = 6;
-comp.ratio.value = 2;
-comp.attack.value = 0.005;
-comp.release.value = 0.1;
+        // masterGain
+        masterGain = AC.createGain();
+        masterGain.gain.value = 1.8;
 
-// 連接順序：comp -> masterGain -> destination
-comp.connect(masterGain).connect(AC.destination);
+        // 輕壓縮器
+        comp = AC.createDynamicsCompressor();
+        comp.threshold.value = -18;
+        comp.knee.value = 6;
+        comp.ratio.value = 2;
+        comp.attack.value = 0.005;
+        comp.release.value = 0.1;
+
+        // 連接順序
+        comp.connect(masterGain).connect(AC.destination);
+    }
+}
 
 // 初始化 SpessaSynth 
 let synth;
 export async function initSynth() {
+    setupAC()
+
     const SOUND_FONT_URL = "https://spessasus.github.io/SpessaSynth/soundfonts/GeneralUserGS.sf3";
     const WORKLET_URL = "https://cdn.jsdelivr.net/npm/spessasynth_lib@4.0.18/dist/spessasynth_processor.min.js";
 
@@ -40,6 +48,7 @@ export async function initSynth() {
     } catch (e) {
         console.warn('setDefaultSoundBank failed:', e);
     }
+    await AC.resume();
     console.log("🎹 Synth 初始化完成");
 }
 
