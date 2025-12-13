@@ -4,6 +4,22 @@ const { WorkletSynthesizer } = spessasynthLib;
 let AC; // 延遲建立
 let masterGain, comp;
 
+let AC_started = false;
+
+function tryStartAC() {
+    if (AC_started) return;
+    if (!AC) setupAC();
+    AC.resume().then(() => {
+        console.log("🎹 AudioContext 已啟動");
+        AC_started = true;
+    });
+}
+
+// 監聽任意使用者互動
+["pointerdown", "keydown", "touchstart"].forEach(evt =>
+    document.body.addEventListener(evt, tryStartAC, { once: true })
+);
+
 function setupAC() {
     if (!AC) {
         AC = new (window.AudioContext || window.webkitAudioContext)();
