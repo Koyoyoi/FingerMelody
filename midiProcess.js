@@ -19,10 +19,8 @@ comp.release.value = 0.1;
 // 連接順序：comp -> masterGain -> destination
 comp.connect(masterGain).connect(AC.destination);
 
-let synth;
-
-
 // 初始化 SpessaSynth 
+let synth;
 export async function initSynth() {
     const SOUND_FONT_URL = "https://spessasus.github.io/SpessaSynth/soundfonts/GeneralUserGS.sf3";
     const WORKLET_URL = "https://cdn.jsdelivr.net/npm/spessasynth_lib@4.0.18/dist/spessasynth_processor.min.js";
@@ -47,6 +45,7 @@ export async function initSynth() {
 }
 
 // MIDI 播放 / 停止
+import { handData } from './main.js';
 let midiEvent = [];
 let midiIndex = 0;
 let activeNotes = [];
@@ -137,10 +136,9 @@ export function handPlayMidi() {
     // 播放當前 MIDI 事件
     events.forEach(evt => {
         const ch = evt.channel || 0;
-        const vel = Math.floor(evt.velocity * 127);
 
         synth.programChange(ch, evt.program || 0);
-        synth.noteOn(ch, evt.midi, vel);
+        synth.noteOn(ch, evt.midi, 100);
 
         activeNotes.push({ ch, midi: evt.midi });
     });
@@ -156,9 +154,13 @@ export function relAllNotes() {
     activeNotes = [];
 }
 
-export function midiCC(handData, refx) {
-    if (!handData?.Left?.[8]) return;
-
+export function midiCC(CP_Y) {
+    if (!handData?.Left?.[8]) {
+        activeNotes.forEach(n => {
+            synth.controllerChange(n.ch, 11, 100);
+        });
+        return;
+    }
     const x = handData.Left[8][0]; // X 座標
     const y = handData.Left[8][1]; // Y 座標
 
@@ -172,8 +174,8 @@ export function midiCC(handData, refx) {
     });
 
     // Channel Pressure 
-    const range = 100; // ±200px
-    let ratio = (x - refx) / range; // -1 ~ 1
+    const range = 150;
+    let ratio = (x - CP_Y) / range; // -1 ~ 1
     ratio = Math.max(-1, Math.min(1, ratio));
 
     // 映射到 Channel Pressure (0~127)
@@ -186,7 +188,6 @@ export function midiCC(handData, refx) {
 
 // MIDI list
 let isFullyLoaded = false;
-const midiListContainer = document.getElementById("midiListContainer");
 const midiListDiv = document.getElementById("midiList");
 const searchInput = document.getElementById("midiSearchInput");
 let midiList = [];
@@ -204,21 +205,10 @@ function sortByTitle(data) {
 export async function loadMidiFiles() {
     if (isFullyLoaded) return;
 
-    midiListContainer.style.display = "flex";
-    midiListDiv.innerHTML = `<div class="status-box">正在初始化請求...</div>`;
-    midiList = [];
-
     let page = 1;
-    let url = `https://imuse.ncnu.edu.tw/Midi-library/api/midis?page=${page}&limit=100&sort=uploaded_at&order=desc`;
-
     try {
-        while (url) {
-            midiListDiv.innerHTML = `
-                <div class="status-box">
-                    <p>⏳ 正在讀取第 <b>${page}</b> 頁...</p>
-                    <small>來源: ${url}</small><br>
-                    <p>目前已累積: ${midiList.length} 筆</p>
-                </div>`;
+        while (true) {
+            let url = `https://imuse.ncnu.edu.tw/Midi-library/api/midis?page=${page}&limit=100&sort=uploaded_at&order=desc`;
 
             const res = await fetch(url);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -229,7 +219,6 @@ export async function loadMidiFiles() {
 
             midiList = [...midiList, ...items];
             page++;
-            url = `https://imuse.ncnu.edu.tw/Midi-library/api/midis?page=${page}&limit=100&sort=uploaded_at&order=desc`;
 
             await new Promise(r => setTimeout(r, 250));
         }
@@ -286,18 +275,49 @@ searchInput.addEventListener("input", () => {
     renderMidiList(filtered);
 });
 
+// URL:?midi -> 尋找 midi 並播放
+export function midiURL(title) {
+    if (!midiList || midiList.length === 0) return;
+
+    // 找到 midiList 中對應 title 的 mid 物件
+    const mid = midiList.find(item => item.title === title);
+    if (!mid) {
+        console.warn(`找不到標題為 "${title}" 的 MIDI`);
+        return;
+    }
+
+    // 直接呼叫 Get_midiEvent，不傳入 divElement
+    Get_midiEvent(mid);
+}
+
 // 下載 MIDI Events
 async function Get_midiEvent(mid, divElement) {
     stopMidi();
     midiIndex = 0;
-    const originalText = divElement.textContent;
-    divElement.style.background = "#fff3cd";
-    divElement.textContent = `⏳ 下載中... ${mid.title}`;
 
-    const titleDiv = document.getElementById("songTitle");
-    if (titleDiv) {
-        titleDiv.textContent = mid.title;
-        titleDiv.style.display = "block";  
+    // 取得全局 overlay
+    const songTitle = document.getElementById("songTitle");
+
+    let titleDiv, composerDiv, originalTitle, originalComposer;
+
+    if (divElement) {
+        // 保存原本歌名與作者的元素
+        titleDiv = divElement.querySelector(".midi-title");
+        composerDiv = divElement.querySelector(".midi-composer");
+
+        originalTitle = titleDiv ? titleDiv.textContent : "";
+        originalComposer = composerDiv ? composerDiv.textContent : "";
+
+        // 下載中提示
+        divElement.style.background = "#fff3cd";
+        if (titleDiv) titleDiv.textContent = `⏳ ${mid.title}`;
+        if (composerDiv) composerDiv.textContent = mid.composer || "";
+    }
+
+    // 顯示 title
+    if (songTitle) {
+        songTitle.innerHTML = `${mid.title}`;
+        songTitle.style.display = "block";
     }
 
     try {
@@ -306,17 +326,29 @@ async function Get_midiEvent(mid, divElement) {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
 
-        // 取出 events 並 group by time
         if (Array.isArray(json.events)) {
             const groups = new Map();
 
             json.events.forEach(ev => {
+                if (ev.channel !== 0) return; // 只保留 channel 0
+
                 const t = ev.time;
                 if (!groups.has(t)) groups.set(t, []);
-                groups.get(t).push(ev);
+
+                let mergedEvent = { ...ev };
+
+                // 如果有 lyric，就把文字加入
+                if (json.lyrics && Array.isArray(json.lyrics)) {
+                    json.lyrics.forEach(lyric => {
+                        if (lyric.time === t) {
+                            mergedEvent.text = lyric.text;
+                        }
+                    });
+                }
+
+                groups.get(t).push(mergedEvent);
             });
 
-            // 依 time 排序後轉成二維陣列
             midiEvent = [...groups.entries()]
                 .sort((a, b) => a[0] - b[0])
                 .map(entry => entry[1]);
@@ -324,18 +356,35 @@ async function Get_midiEvent(mid, divElement) {
             midiEvent = [];
         }
 
-        divElement.style.background = "#d4edda";
-        divElement.textContent = `✅ 完成: ${mid.title}`;
+        // 下載完成提示
+        if (divElement) {
+            divElement.style.background = "#d4edda";
+            if (titleDiv) titleDiv.textContent = `✅ ${mid.title}`;
+            if (composerDiv) composerDiv.textContent = mid.composer || "";
 
-        setTimeout(() => {
-            divElement.style.background = "";
-            divElement.textContent = originalText;
-        }, 1500);
+            // 1.5 秒後復原原本歌名與作曲者
+            setTimeout(() => {
+                divElement.style.background = "";
+                if (titleDiv) titleDiv.textContent = originalTitle;
+                if (composerDiv) composerDiv.textContent = originalComposer;
+            }, 1500);
+        }
+
+        // 更新 overlay
+        if (songTitle) {
+            songTitle.innerHTML = `${mid.title}`;
+        }
 
     } catch (err) {
         console.error("❌ 下載 MIDI 失敗:", err);
-        divElement.style.color = "red";
-        divElement.textContent = `❌ 下載失敗`;
+        if (divElement) {
+            divElement.style.background = "#f8d7da";
+            if (titleDiv) titleDiv.textContent = `❌ 下載失敗`;
+            if (composerDiv) composerDiv.textContent = "";
+        }
+        if (songTitle) {
+            songTitle.innerHTML = `❌ ${mid.title}`;
+        }
     }
-
 }
+

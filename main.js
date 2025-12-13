@@ -1,6 +1,7 @@
 import {
     loadMidiFiles, initSynth,
-    playMidi, stopMidi, handPlayMidi, relAllNotes, midiCC
+    playMidi, stopMidi, handPlayMidi, relAllNotes, midiCC,
+    midiURL
 } from "./midiProcess.js";
 import { detectHand, setupMediaPipe } from "./MediaPipe/MediaPipe.js";
 
@@ -13,7 +14,6 @@ const stopBtn = document.getElementById("stopBtn");
 
 // 開啟 MIDI 清單
 showListBtn.addEventListener("click", async () => {
-    await loadMidiFiles();
     midiListContainer.style.display = "flex";
 });
 
@@ -66,13 +66,13 @@ function isPinched(hand) {
     const dy = p4[1] - p8[1];
     const dist = Math.sqrt(dx * dx + dy * dy);
 
-    return dist < 40; // 閾值可調
+    return dist < 50; // 閾值可調
 }
 
 // main Loop
 export let handData = { "Left": [], "Right": [] };
 let pinchActive = false;
-let refx;
+let channelPressure_Y;
 
 async function mainLoop() {
     // reset hands data
@@ -87,13 +87,13 @@ async function mainLoop() {
         const pinched = isPinched(right);
 
         // 更新音量
-        midiCC(handData, refx);
+        midiCC(channelPressure_Y);
 
         // Pinch 開始
         if (pinched && !pinchActive) {
             pinchActive = true;
             if (handData?.Left?.[8]?.[0] != null) {
-                refx = handData.Left[8][0]; 
+                channelPressure_Y = handData.Left[8][0];
             }
             handPlayMidi(handData);
         }
@@ -119,7 +119,12 @@ async function mainLoop() {
 // 初始化系統
 async function initSystem() {
     await setupMediaPipe();
-    initSynth();
+    await initSynth();
+    await loadMidiFiles();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const title = urlParams.get("midi");
+    if (title) {midiURL(title);}
     initCamera();
 }
 
