@@ -48,7 +48,7 @@ export async function initSynth() {
     } catch (e) {
         console.warn('setDefaultSoundBank failed:', e);
     }
-    await AC.resume();
+    if (AC.state === "suspended") await AC.resume(); // 確保啟動
     console.log("🎹 Synth 初始化完成");
 }
 
