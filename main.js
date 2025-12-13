@@ -119,12 +119,11 @@ async function mainLoop() {
 // 初始化系統
 async function initSystem() {
     await setupMediaPipe();
-    await initSynth();
     await loadMidiFiles();
-
+    await initSynth();
     const urlParams = new URLSearchParams(window.location.search);
     const title = urlParams.get("midi");
-    if (title) {midiURL(title);}
+    if (title) { midiURL(title); }
     initCamera();
 }
 

@@ -40,7 +40,6 @@ export async function initSynth() {
     } catch (e) {
         console.warn('setDefaultSoundBank failed:', e);
     }
-    await AC.resume();
     console.log("🎹 Synth 初始化完成");
 }
 
