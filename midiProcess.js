@@ -70,45 +70,33 @@ export async function initSynth() {
 
 // MIDI 播放 / 停止
 import { handData } from './main.js';
-let midiEvent = [];
-let midiIndex = 0;
-let activeNotes = [];
-let scheduledNotes = [];
+export let lyric = "";
+let midiEvent = [], activeNotes = [], scheduledNotes = [];
+let midiIndex = 0
 
 export function play() {
     if (!synth || !midiEvent || midiEvent.length === 0) return;
 
     const startTime = AC.currentTime;
 
-    // 清除上次排程前：不能直接 clear，要先 noteOff
-    stop();  // <<< 自動完整停止
+    stop(); // 先完整停止
 
-    // midiEvent 是二維陣列：每組同時間事件
     midiEvent.forEach(group => {
-        if (!group || group.length === 0) return;
+        if (!group || !group.notes) return;
 
-        const time = group[0].time;
-
-        group.forEach(event => {
-            synth.programChange(event.channel || 0, event.program || 0);
-
+        // group.notes 是物件，midi => event
+        Object.values(group.notes).forEach(event => {
+            const time = event.time;
             const noteOnTime = startTime + time;
             const noteOffTime = noteOnTime + event.duration;
 
             // --- 排程 noteOn ---
             const onId = setTimeout(() => {
                 const ch = event.channel || 0;
-                const midi = event.midi;
+                synth.programChange(ch, event.program || 0);
+                synth.noteOn(ch, event.midi, Math.max(Math.floor(event.velocity * 127), 100));
 
-                synth.noteOn(
-                    ch,
-                    midi,
-                    Math.max(Math.floor(event.velocity * 127), 100)
-                );
-
-                // 記錄發聲中的音
-                activeNotes.push({ ch, midi });
-
+                activeNotes.push({ ch, midi: event.midi });
             }, (noteOnTime - AC.currentTime) * 1000);
 
             scheduledNotes.push(onId);
@@ -116,14 +104,9 @@ export function play() {
             // --- 排程 noteOff ---
             const offId = setTimeout(() => {
                 const ch = event.channel || 0;
-                const midi = event.midi;
+                synth.noteOff(ch, event.midi);
 
-                synth.noteOff(ch, midi);
-
-                // 從 activeNotes 移除
-                activeNotes = activeNotes.filter(
-                    n => !(n.ch === ch && n.midi === midi)
-                );
+                activeNotes = activeNotes.filter(n => !(n.ch === ch && n.midi === event.midi));
             }, (noteOffTime - AC.currentTime) * 1000);
 
             scheduledNotes.push(offId);
@@ -147,24 +130,22 @@ export function stop() {
 export function handPlay() {
     if (!synth || !midiEvent?.length) return;
 
-    const events = midiEvent[midiIndex];
-    if (!events?.length) return;
+    const group = midiEvent[midiIndex];
+    if (!group?.notes) return;
 
-    // 播放當前 MIDI 事件
-    events.forEach(evt => {
+    Object.values(group.notes).forEach(evt => {
         const ch = evt.channel || 0;
-
         synth.programChange(ch, evt.program || 0);
         synth.noteOn(ch, evt.midi, 100);
 
         activeNotes.push({ ch, midi: evt.midi });
     });
-
-    // 更新索引
+    lyric = group.lyrics
     midiIndex = (midiIndex + 1) % midiEvent.length;
 }
 
 export function noteSeqOff() {
+    lyric = "";
     activeNotes.forEach(n => {
         synth.noteOff(n.ch, n.midi);
     });
@@ -348,27 +329,26 @@ async function getEvents(mid, divElement) {
 
             json.events.forEach(ev => {
                 if (ev.channel !== 0) return; // 只保留 channel 0
-
                 const t = ev.time;
-                if (!groups.has(t)) groups.set(t, []);
-
-                let mergedEvent = { ...ev };
+                if (!groups.has(t)) groups.set(t, { lyrics: "", notes: {} });
 
                 // 如果有 lyric，就把文字加入
                 if (json.lyrics && Array.isArray(json.lyrics)) {
                     json.lyrics.forEach(lyric => {
                         if (lyric.time === t) {
-                            mergedEvent.text = lyric.text;
+                            groups.get(t).lyrics = lyric.text;
                         }
                     });
                 }
 
-                groups.get(t).push(mergedEvent);
+                // 將音符事件加入 notes，以 midi 為 key
+                groups.get(t).notes[ev.midi] = ev;
             });
 
+            // 轉成排序陣列
             midiEvent = [...groups.entries()]
                 .sort((a, b) => a[0] - b[0])
-                .map(entry => entry[1]);
+                .map(entry => entry[1]); // 只取 value
         } else {
             midiEvent = [];
         }

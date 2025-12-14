@@ -51,7 +51,7 @@ function isPinched(hand) {
 }
 
 // main Loop
-import { FingerPoint } from "./visualDraw.js";
+import { FingerPoint, drawLyric } from "./visualDraw.js";
 
 export let handData = { "Left": [], "Right": [] };
 let pinchActive = false;
@@ -95,6 +95,7 @@ async function mainLoop() {
     }
 
     FingerPoint();
+    drawLyric();
 
     requestAnimationFrame(mainLoop);
 }

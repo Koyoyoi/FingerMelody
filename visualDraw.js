@@ -1,5 +1,5 @@
 import { handData } from "./main.js";
-
+import { lyric } from "./midiProcess.js";
 // videoCanvas
 const videoCV = document.getElementById("videoCanvas");
 
@@ -53,5 +53,30 @@ export function FingerPoint() {
         drawCtx.fillStyle = 'blue';
         drawCtx.fill();
     });
+}
+
+export function drawLyric() {
+
+    if (!handData?.Right?.[8] || lyric == "") return; // 假設右手第8指是pinched點
+
+    const scaleX = drawCV.width / baseWidth;
+    const scaleY = drawCV.height / baseHeight;
+    const [x, y] = [drawCV.width - handData.Right[8][0] * scaleX, handData.Right[8][1] * scaleY]; // 取得座標
+
+    // 畫圓圈
+    drawCtx.beginPath();
+    drawCtx.arc(x, y, 100, 0, 2 * Math.PI); // 半徑20
+    drawCtx.fillStyle = "rgba(255, 255, 0, 0.5)"; // 半透明黃色
+    drawCtx.fill();
+    drawCtx.lineWidth = 2;
+    drawCtx.strokeStyle = "orange";
+    drawCtx.stroke();
+
+    // 畫文字
+    drawCtx.font = "80px Arial";
+    drawCtx.fillStyle = "white";
+    drawCtx.textAlign = "center";
+    drawCtx.textBaseline = "middle";
+    drawCtx.fillText(lyric, x, y);
 }
 
