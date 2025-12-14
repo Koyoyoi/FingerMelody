@@ -1,8 +1,4 @@
-import {
-    loadMidiFiles, initSynth,
-    playMidi, stopMidi, handPlayMidi, relAllNotes, midiCC,
-    midiURL
-} from "./midiProcess.js";
+import * as midi from "./midiProcess.js";
 import { detectHand, setupMediaPipe } from "./MediaPipe/MediaPipe.js";
 
 // MIDI list
@@ -21,10 +17,10 @@ showListBtn.addEventListener("click", async () => {
 closeList.addEventListener("click", () => midiListContainer.style.display = "none");
 
 // 播放 MIDI
-playBtn.addEventListener("click", async () => { playMidi(); });
+playBtn.addEventListener("click", async () => { midi.play(); });
 
 // 停止 MIDI
-stopBtn.addEventListener("click", () => stopMidi());
+stopBtn.addEventListener("click", () => midi.stop());
 
 // Canvas 
 const canvas = document.getElementById("videoCanvas");
@@ -87,7 +83,7 @@ async function mainLoop() {
         const pinched = isPinched(right);
 
         // 更新音量
-        midiCC(channelPressure_Y);
+        midi.CCtrl(channelPressure_Y);
 
         // Pinch 開始
         if (pinched && !pinchActive) {
@@ -95,13 +91,13 @@ async function mainLoop() {
             if (handData?.Left?.[8]?.[0] != null) {
                 channelPressure_Y = handData.Left[8][0];
             }
-            handPlayMidi(handData);
+            midi.handPlay(handData);
         }
 
         // Pinch 結束
         if (!pinched && pinchActive) {
             pinchActive = false;
-            relAllNotes();
+            midi.noteSeqOff();
         }
     }
 
@@ -119,11 +115,11 @@ async function mainLoop() {
 // 初始化系統
 async function initSystem() {
     await setupMediaPipe();
-    await loadMidiFiles();
-    await initSynth();
+    await midi.loadFiles();
+    await midi.initSynth();
     const urlParams = new URLSearchParams(window.location.search);
     const title = urlParams.get("midi");
-    if (title) { midiURL(title); }
+    if (title) { midi.URL(title); }
     initCamera();
 }
 

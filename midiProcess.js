@@ -75,13 +75,13 @@ let midiIndex = 0;
 let activeNotes = [];
 let scheduledNotes = [];
 
-export function playMidi() {
+export function play() {
     if (!synth || !midiEvent || midiEvent.length === 0) return;
 
     const startTime = AC.currentTime;
 
     // 清除上次排程前：不能直接 clear，要先 noteOff
-    stopMidi();  // <<< 自動完整停止
+    stop();  // <<< 自動完整停止
 
     // midiEvent 是二維陣列：每組同時間事件
     midiEvent.forEach(group => {
@@ -133,25 +133,18 @@ export function playMidi() {
     console.log("MIDI 播放中");
 }
 
-export function stopMidi() {
-    // ① 先完整 noteOff
-    activeNotes.forEach(n => {
-        try {
-            synth.noteOff(n.ch, n.midi);
-        } catch (e) {
-            console.warn("noteOff error:", e);
-        }
-    });
-    activeNotes = [];
+export function stop() {
+    // 先完整 noteOff
+    noteSeqOff();
 
-    // ② 再清除所有排程
+    // 再清除所有排程
     scheduledNotes.forEach(id => clearTimeout(id));
     scheduledNotes = [];
 
     console.log("MIDI 停止");
 }
 
-export function handPlayMidi() {
+export function handPlay() {
     if (!synth || !midiEvent?.length) return;
 
     const events = midiEvent[midiIndex];
@@ -171,14 +164,14 @@ export function handPlayMidi() {
     midiIndex = (midiIndex + 1) % midiEvent.length;
 }
 
-export function relAllNotes() {
+export function noteSeqOff() {
     activeNotes.forEach(n => {
         synth.noteOff(n.ch, n.midi);
     });
     activeNotes = [];
 }
 
-export function midiCC(CP_Y) {
+export function CCtrl(CP_Y) {
     if (!handData?.Left?.[8]) {
         activeNotes.forEach(n => {
             synth.controllerChange(n.ch, 11, 100);
@@ -211,10 +204,10 @@ export function midiCC(CP_Y) {
 }
 
 // MIDI list
+let midiList = [];
 let isFullyLoaded = false;
 const midiListDiv = document.getElementById("midiList");
 const searchInput = document.getElementById("midiSearchInput");
-let midiList = [];
 
 // 排序
 function sortByTitle(data) {
@@ -226,7 +219,7 @@ function sortByTitle(data) {
 }
 
 // 載入 MIDI 列表
-export async function loadMidiFiles() {
+export async function loadFiles() {
     if (isFullyLoaded) return;
 
     let page = 1;
@@ -249,7 +242,7 @@ export async function loadMidiFiles() {
 
         midiList = sortByTitle(midiList);
         isFullyLoaded = true;
-        renderMidiList();
+        renderList();
 
     } catch (err) {
         console.error("載入錯誤:", err);
@@ -258,7 +251,7 @@ export async function loadMidiFiles() {
 }
 
 // 渲染 MIDI 列表
-export function renderMidiList(filteredList) {
+export function renderList(filteredList) {
     const listToRender = filteredList || midiList;
 
     midiListDiv.innerHTML = "";
@@ -282,7 +275,7 @@ export function renderMidiList(filteredList) {
         div.appendChild(titleDiv);
         div.appendChild(composerDiv);
 
-        div.addEventListener("click", () => Get_midiEvent(mid, div));
+        div.addEventListener("click", () => getEvents(mid, div));
         midiListDiv.appendChild(div);
     });
 }
@@ -290,17 +283,17 @@ export function renderMidiList(filteredList) {
 // 搜尋
 searchInput.addEventListener("input", () => {
     const keyword = searchInput.value.trim().toLowerCase();
-    if (!keyword) return renderMidiList();
+    if (!keyword) return renderList();
 
     const filtered = midiList.filter(mid =>
         mid.title?.toLowerCase().includes(keyword) ||
         mid.composer?.toLowerCase().includes(keyword)
     );
-    renderMidiList(filtered);
+    renderList(filtered);
 });
 
 // URL:?midi -> 尋找 midi 並播放
-export function midiURL(title) {
+export function URL(title) {
     if (!midiList || midiList.length === 0) return;
 
     // 找到 midiList 中對應 title 的 mid 物件
@@ -311,12 +304,12 @@ export function midiURL(title) {
     }
 
     // 直接呼叫 Get_midiEvent，不傳入 divElement
-    Get_midiEvent(mid);
+    getEvents(mid);
 }
 
 // 下載 MIDI Events
-async function Get_midiEvent(mid, divElement) {
-    stopMidi();
+async function getEvents(mid, divElement) {
+    stop();
     midiIndex = 0;
 
     // 取得全局 overlay
