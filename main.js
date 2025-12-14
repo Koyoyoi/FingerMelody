@@ -51,7 +51,7 @@ function isPinched(hand) {
 }
 
 // main Loop
-import { FingerPoint } from "./VS_interact.js";
+import { FingerPoint } from "./visualDraw.js";
 
 export let handData = { "Left": [], "Right": [] };
 let pinchActive = false;
