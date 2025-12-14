@@ -1,5 +1,6 @@
 /* 全螢幕 Canvas */
-html, body {
+html,
+body {
     margin: 0;
     padding: 0;
     width: 100%;
@@ -10,7 +11,8 @@ html, body {
     overflow: hidden;
 }
 
-#videoCanvas {
+#videoCanvas,
+#drawCanvas {
     display: block;
     position: absolute;
     top: 0;
@@ -20,20 +22,30 @@ html, body {
     z-index: 0;
 }
 
+#drawCan {
+    pointer-events: none;
+    /* 不阻擋滑鼠事件 */
+}
+
 /* song title */
 #songTitle {
-    display: none;                  /* 預設隱藏 */
+    display: none;
+    /* 預設隱藏 */
     position: absolute;
-    bottom: 0;                      /* 背景延伸到底部 */
+    bottom: 0;
+    /* 背景延伸到底部 */
     left: 0;
-    width: 100%;                    /* 跟螢幕同寬 */
+    width: 100%;
+    /* 跟螢幕同寬 */
     text-align: center;
     font-size: 50px;
     font-weight: bold;
     color: #fff;
-    text-shadow: 1px 1px 4px rgba(0,0,0,0.7);
-    background-color: rgba(0, 0, 0, 0.5); /* 半透明黑色背景 */
-    padding: 20px 0;                /* 上下留白，背景高度較高 */
+    text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.7);
+    background-color: rgba(0, 0, 0, 0.5);
+    /* 半透明黑色背景 */
+    padding: 20px 0;
+    /* 上下留白，背景高度較高 */
     pointer-events: none;
     z-index: 10;
 }

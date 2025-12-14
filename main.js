@@ -9,29 +9,13 @@ const playBtn = document.getElementById("playBtn");
 const stopBtn = document.getElementById("stopBtn");
 
 // 開啟 MIDI 清單
-showListBtn.addEventListener("click", async () => {
-    midiListContainer.style.display = "flex";
-});
-
+showListBtn.addEventListener("click", async () => { midiListContainer.style.display = "flex"; });
 // 關閉 MIDI 清單
 closeList.addEventListener("click", () => midiListContainer.style.display = "none");
-
 // 播放 MIDI
 playBtn.addEventListener("click", async () => { midi.play(); });
-
 // 停止 MIDI
 stopBtn.addEventListener("click", () => midi.stop());
-
-// Canvas 
-const canvas = document.getElementById("videoCanvas");
-const ctx = canvas.getContext("2d");
-
-function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-}
-window.addEventListener("resize", resizeCanvas);
-resizeCanvas();
 
 // WebCam
 export let video = document.createElement("video");
@@ -55,32 +39,41 @@ async function initCamera() {
 function isPinched(hand) {
     if (!hand || hand.length < 9) return false;
 
-    const p4 = hand[4]; // thumb tip
-    const p8 = hand[8]; // index tip
+    const p4 = hand[4]; // 拇指尖
+    const p8 = hand[8]; // 食指尖
 
     const dx = p4[0] - p8[0];
     const dy = p4[1] - p8[1];
     const dist = Math.sqrt(dx * dx + dy * dy);
 
+    // 回傳是否捏合
     return dist < 50; // 閾值可調
 }
 
 // main Loop
+import { FingerPoint } from "./VS_interact.js";
+
 export let handData = { "Left": [], "Right": [] };
 let pinchActive = false;
 let channelPressure_Y;
+// videoCanvas
+const videoCV = document.getElementById("videoCanvas");
+const videoCtx = videoCV.getContext("2d");
 
 async function mainLoop() {
+    // set up video stream
+    videoCtx.setTransform(-1, 0, 0, 1, videoCV.width, 0);
+    videoCtx.clearRect(0, 0, videoCV.width, videoCV.height);
+    videoCtx.drawImage(video, 0, 0, videoCV.width, videoCV.height);
+
     // reset hands data
     handData.Left = [];
     handData.Right = [];
     await detectHand();
 
-    const right = handData.Right;
-
     // pinch detect 
-    if (right && right.length > 0) {
-        const pinched = isPinched(right);
+    if (handData.Right && handData.Right.length > 0) {
+        const pinched = isPinched(handData.Right);
 
         // 更新音量
         midi.CCtrl(channelPressure_Y);
@@ -101,13 +94,7 @@ async function mainLoop() {
         }
     }
 
-    // set up video stream
-    const { width: cw, height: ch } = canvas;
-
-    const ctx = canvas.getContext("2d");
-    ctx.setTransform(-1, 0, 0, 1, cw, 0);
-    ctx.clearRect(0, 0, cw, ch);
-    ctx.drawImage(video, 0, 0, cw, ch);
+    FingerPoint();
 
     requestAnimationFrame(mainLoop);
 }
