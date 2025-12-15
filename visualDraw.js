@@ -62,31 +62,31 @@ export function FingerPoint(pinchHand) {
 
             // 畫拇指
             drawCtx.beginPath();
-            drawCtx.arc(thumbX, thumbY, 50, 0, Math.PI * 2);
-            drawCtx.fillStyle = '#F0A986';
+            drawCtx.arc(thumbX, thumbY, 30, 0, Math.PI * 2);
+            drawCtx.fillStyle = '#F0A98680';
             drawCtx.fill();
 
             // 畫食指
             drawCtx.beginPath();
-            drawCtx.arc(indexX, indexY, 50, 0, Math.PI * 2);
-            drawCtx.fillStyle = '#F0A986';
+            drawCtx.arc(indexX, indexY, 30, 0, Math.PI * 2);
+            drawCtx.fillStyle = '#F0A98680';
             drawCtx.fill();
 
             // 畫連線
             drawCtx.beginPath();
             drawCtx.moveTo(thumbX, thumbY);
             drawCtx.lineTo(indexX, indexY);
-            drawCtx.lineWidth = 20;
-            drawCtx.strokeStyle = '#F0A986';
+            drawCtx.lineWidth = 10;
+            drawCtx.strokeStyle = '#F0A98680';
             drawCtx.stroke();
 
         } else {
             // 非 pinch 手：只畫食指，半徑依 Y 變化
             // 假設 Y 越小 (靠上) 半徑越大，Y 越大 (靠下) 半徑越小
-            const radius = 100 * (1 - indexY / drawCV.height) + 10; // 最小 5，最大 25
+            const radius = 50 * (1 - indexY / drawCV.height); // 最小 5，最大 25
             drawCtx.beginPath();
             drawCtx.arc(indexX, indexY, radius, 0, Math.PI * 2);
-            drawCtx.fillStyle = '#FFC408';
+            drawCtx.fillStyle = '#FFC40880';
             drawCtx.fill();
         }
     });
@@ -110,18 +110,18 @@ export function drawLyric(pinchHand) {
 
     // 畫圓圈
     drawCtx.beginPath();
-    drawCtx.arc(lyricPos.x, lyricPos.y, 60, 0, 2 * Math.PI);
-    drawCtx.fillStyle = '#91B493';
+    drawCtx.arc(lyricPos.x, lyricPos.y, 30, 0, 2 * Math.PI);
+    drawCtx.fillStyle = '#91B49380';
     drawCtx.fill();
-    drawCtx.lineWidth = 10;
-    drawCtx.strokeStyle = '#B5CAA0';
+    drawCtx.lineWidth = 5;
+    drawCtx.strokeStyle = '#B5CAA080';
     drawCtx.stroke();
 
-    drawCtx.font = "bold 80px Arial";
+    drawCtx.font = "bold 40px Arial";
     drawCtx.fillStyle = "white";
     drawCtx.textAlign = "center";
     drawCtx.textBaseline = "middle";
-    drawCtx.fillText(lyric, lyricPos.x, lyricPos.y + 10);
+    drawCtx.fillText(lyric, lyricPos.x, lyricPos.y + 5);
 }
 
 let bubleSeq = []; // 全域存放泡泡
@@ -149,19 +149,19 @@ export function bubleUP(lyric) {
 
         // 畫圓圈
         drawCtx.beginPath();
-        drawCtx.arc(b.x, b.y, 60, 0, 2 * Math.PI);
-        drawCtx.fillStyle = '#91B493';
+        drawCtx.arc(b.x, b.y, 30, 0, 2 * Math.PI);
+        drawCtx.fillStyle = '#91B49380';
         drawCtx.fill();
-        drawCtx.lineWidth = 10;
-        drawCtx.strokeStyle = '#B5CAA0';
+        drawCtx.lineWidth = 5;
+        drawCtx.strokeStyle = '#B5CAA080';
         drawCtx.stroke();
 
         // 畫文字
-        drawCtx.font = "bold 80px Arial";
+        drawCtx.font = "bold 40px Arial";
         drawCtx.fillStyle = "white";
         drawCtx.textAlign = "center";
         drawCtx.textBaseline = "middle";
-        drawCtx.fillText(b.lyric, b.x, b.y + 10);
+        drawCtx.fillText(b.lyric, b.x, b.y + 5);
 
         // 超出畫面移除
         if (b.y < 0) bubleSeq.splice(i, 1);
