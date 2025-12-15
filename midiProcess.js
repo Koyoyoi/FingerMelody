@@ -69,6 +69,7 @@ export async function initSynth() {
 }
 
 // MIDI 播放 / 停止
+import { bubleUP } from './visualDraw.js';
 export let lyric = "";
 let midiEvent = [], activeNotes = [], scheduledNotes = [];
 let midiIndex = 0
@@ -144,6 +145,7 @@ export function handPlay() {
 }
 
 export function noteSeqOff() {
+    bubleUP(lyric);
     lyric = "";
     activeNotes.forEach(n => {
         synth.noteOff(n.ch, n.midi);

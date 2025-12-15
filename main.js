@@ -51,7 +51,7 @@ function isPinched(hand) {
 }
 
 // main Loop
-import { visualStream, FingerPoint, drawLyric } from "./visualDraw.js";
+import { visualStream, FingerPoint, drawLyric, bubleUP } from "./visualDraw.js";
 
 export let handData = { "Left": [], "Right": [] };
 let pinchActive = false;
@@ -112,6 +112,7 @@ async function mainLoop() {
     }
 
     FingerPoint();
+    bubleUP();
     if (RPinched) {
         drawLyric("Right");
         FingerPoint("Right");

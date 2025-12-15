@@ -92,8 +92,7 @@ export function FingerPoint(pinchHand) {
     });
 }
 
-
-
+let lyricPos = { x: 0, y: 0 };
 export function drawLyric(pinchHand) {
 
     // 沒有 pinch 手或沒有歌詞就不畫
@@ -106,14 +105,12 @@ export function drawLyric(pinchHand) {
     const scaleX = drawCV.width / baseWidth;
     const scaleY = drawCV.height / baseHeight;
 
-    const [x, y] = [
-        drawCV.width - finger[0] * scaleX,
-        finger[1] * scaleY
-    ];
+    lyricPos.x = drawCV.width - finger[0] * scaleX;
+    lyricPos.y = finger[1] * scaleY;
 
     // 畫圓圈
     drawCtx.beginPath();
-    drawCtx.arc(x, y, 60, 0, 2 * Math.PI);
+    drawCtx.arc(lyricPos.x, lyricPos.y, 60, 0, 2 * Math.PI);
     drawCtx.fillStyle = '#91B493';
     drawCtx.fill();
     drawCtx.lineWidth = 10;
@@ -124,8 +121,50 @@ export function drawLyric(pinchHand) {
     drawCtx.fillStyle = "white";
     drawCtx.textAlign = "center";
     drawCtx.textBaseline = "middle";
-    drawCtx.fillText(lyric, x, y + 10);
-
+    drawCtx.fillText(lyric, lyricPos.x, lyricPos.y + 10);
 }
 
+let bubleSeq = []; // 全域存放泡泡
 
+export function bubleUP(lyric) {
+    // 有文字 → push 到泡泡序列
+    if (lyric && lyricPos) {
+        bubleSeq.push({
+            lyric: lyric,
+            x: lyricPos.x,
+            y: lyricPos.y,
+            speedY: 5 // 每幀上升 2px
+        });
+        return;
+    }
+
+    if (!bubleSeq.length) return;
+
+    // 從後往前遍歷，方便移除
+    for (let i = bubleSeq.length - 1; i >= 0; i--) {
+        const b = bubleSeq[i];
+
+        // 上升
+        b.y -= b.speedY;
+
+        // 畫圓圈
+        drawCtx.beginPath();
+        drawCtx.arc(b.x, b.y, 60, 0, 2 * Math.PI);
+        drawCtx.fillStyle = '#91B493';
+        drawCtx.fill();
+        drawCtx.lineWidth = 10;
+        drawCtx.strokeStyle = '#B5CAA0';
+        drawCtx.stroke();
+
+        // 畫文字
+        drawCtx.font = "bold 80px Arial";
+        drawCtx.fillStyle = "white";
+        drawCtx.textAlign = "center";
+        drawCtx.textBaseline = "middle";
+        drawCtx.fillText(b.lyric, b.x, b.y + 10);
+
+        // 超出畫面移除
+        if (b.y < 0) bubleSeq.splice(i, 1);
+    }
+    console.log(bubleSeq.length)
+}
