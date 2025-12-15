@@ -325,34 +325,40 @@ async function getEvents(mid, divElement) {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
 
-        if (Array.isArray(json.events)) {
-            const groups = new Map();
+      if (Array.isArray(json.events)) {
+    const groups = new Map();
 
-            json.events.forEach(ev => {
-                if (ev.channel !== 0) return; // 只保留 channel 0
-                const t = ev.time;
-                if (!groups.has(t)) groups.set(t, { lyrics: "", notes: {} });
+    json.events.forEach(ev => {
+        if (ev.channel !== 0) return; // 只保留 channel 0
 
-                // 如果有 lyric，就把文字加入
-                if (json.lyrics && Array.isArray(json.lyrics)) {
-                    json.lyrics.forEach(lyric => {
-                        if (lyric.time === t) {
-                            groups.get(t).lyrics = lyric.text;
-                        }
-                    });
-                }
+        // 統一 time 小數6位
+        const t = Math.floor(ev.time * 1e6) / 1e6;
 
-                // 將音符事件加入 notes，以 midi 為 key
-                groups.get(t).notes[ev.midi] = ev;
+        if (!groups.has(t)) groups.set(t, { lyrics: "", notes: {} });
+
+        // 如果有 lyric，就把文字加入
+        if (json.lyrics && Array.isArray(json.lyrics)) {
+            json.lyrics.forEach(lyric => {
+                const lyricTime = Math.floor(lyric.time * 1e6) / 1e6;
+                if (lyricTime === t) {
+                    groups.get(t).lyrics = lyric.text;
+                }else{console.log(lyric.text, lyricTime, t)}
             });
-
-            // 轉成排序陣列
-            midiEvent = [...groups.entries()]
-                .sort((a, b) => a[0] - b[0])
-                .map(entry => entry[1]); // 只取 value
-        } else {
-            midiEvent = [];
         }
+
+        // 將音符事件加入 notes，以 midi 為 key，統一小數6位
+        const midiKey = Number(ev.midi.toFixed(6));
+        groups.get(t).notes[midiKey] = ev;
+    });
+
+    // 轉成排序陣列
+    midiEvent = [...groups.entries()]
+        .sort((a, b) => a[0] - b[0])
+        .map(entry => entry[1]); // 只取 value
+} else {
+    midiEvent = [];
+}
+
 
         // 下載完成提示
         if (divElement) {
