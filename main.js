@@ -51,51 +51,74 @@ function isPinched(hand) {
 }
 
 // main Loop
-import { FingerPoint, drawLyric } from "./visualDraw.js";
+import { visualStream, FingerPoint, drawLyric } from "./visualDraw.js";
 
 export let handData = { "Left": [], "Right": [] };
 let pinchActive = false;
 let channelPressure_Y;
-// videoCanvas
-const videoCV = document.getElementById("videoCanvas");
-const videoCtx = videoCV.getContext("2d");
 
 async function mainLoop() {
-    // set up video stream
-    videoCtx.setTransform(-1, 0, 0, 1, videoCV.width, 0);
-    videoCtx.clearRect(0, 0, videoCV.width, videoCV.height);
-    videoCtx.drawImage(video, 0, 0, videoCV.width, videoCV.height);
+    visualStream();
 
     // reset hands data
     handData.Left = [];
     handData.Right = [];
     await detectHand();
 
-    // pinch detect 
-    if (handData.Right && handData.Right.length > 0) {
-        const pinched = isPinched(handData.Right);
+    // pinch detect
+    const RPinched = handData.Right && handData.Right.length > 0
+        ? isPinched(handData.Right)
+        : false;
 
-        // 更新音量
-        midi.CCtrl(channelPressure_Y);
+    const LPinched = handData.Left && handData.Left.length > 0
+        ? isPinched(handData.Left)
+        : false;
 
-        // Pinch 開始
-        if (pinched && !pinchActive) {
+    // 右手 pinch → 左手 CC
+    if (RPinched) {
+        // 更新音量（左手控制）
+        if (handData?.Left?.[8]?.[0] != null) {
+            midi.CCtrl(handData.Left[8], channelPressure_Y);
+        }
+
+        if (!pinchActive) {
             pinchActive = true;
             if (handData?.Left?.[8]?.[0] != null) {
                 channelPressure_Y = handData.Left[8][0];
             }
-            midi.handPlay(handData);
-        }
-
-        // Pinch 結束
-        if (!pinched && pinchActive) {
-            pinchActive = false;
-            midi.noteSeqOff();
+            midi.handPlay();
         }
     }
 
+    //左手 pinch 
+    if (LPinched) {
+        // 更新音量（右手控制）
+        if (handData?.Right?.[8]?.[0] != null) {
+            midi.CCtrl(handData.Right[8], channelPressure_Y);
+        }
+
+        if (!pinchActive) {
+            pinchActive = true;
+            if (handData?.Right?.[8]?.[0] != null) {
+                channelPressure_Y = handData.Right[8][0];
+            } midi.handPlay();
+        }
+    }
+
+    //Pinch 結束（兩手都沒 pinch）
+    if (!RPinched && !LPinched && pinchActive) {
+        pinchActive = false;
+        midi.noteSeqOff();
+    }
+
     FingerPoint();
-    drawLyric();
+    if (RPinched) {
+        drawLyric("Right");
+        FingerPoint("Right");
+    } else if (LPinched) {
+        drawLyric("Left");
+        FingerPoint("Left");
+    }
 
     requestAnimationFrame(mainLoop);
 }

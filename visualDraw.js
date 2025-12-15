@@ -1,7 +1,8 @@
-import { handData } from "./main.js";
+import { handData, video } from "./main.js";
 import { lyric } from "./midiProcess.js";
 // videoCanvas
-const videoCV = document.getElementById("videoCanvas");
+const videoCV = document.getElementById("videoCanvas");;
+const videoCtx = videoCV.getContext("2d");
 
 //  drawCanvas  
 const drawCV = document.getElementById("drawCanvas");
@@ -20,10 +21,23 @@ resizeCanvas();
 const baseWidth = 1280;  // 原始座標對應的攝影機寬
 const baseHeight = 720;  // 原始座標對應的攝影機高
 
-export function FingerPoint() {
-    if (!handData) return;
-
+export function visualStream() {
+    // clear canvas
+    videoCtx.clearRect(0, 0, videoCV.width, videoCV.height);
     drawCtx.clearRect(0, 0, drawCV.width, drawCV.height);
+    // set up video stream
+    videoCtx.setTransform(-1, 0, 0, 1, videoCV.width, 0);
+    videoCtx.drawImage(video, 0, 0, videoCV.width, videoCV.height);
+}
+
+let currentHand = "Right";
+export function FingerPoint(pinchHand) {
+    if (!handData || currentHand == pinchHand) return;
+
+    // 更新目前 pinch 的手（外部狀態）
+    if (pinchHand && currentHand !== pinchHand) {
+        currentHand = pinchHand;
+    }
 
     const scaleX = drawCV.width / baseWidth;
     const scaleY = drawCV.height / baseHeight;
@@ -32,51 +46,86 @@ export function FingerPoint() {
         const lm = handData[handSide];
         if (!lm || lm.length < 9) return;
 
-        const thumb = lm[4];
         const index = lm[8];
+        if (!index) return;
 
-        if (!thumb || !index) return;
-
-        // 按比例縮放到新的 canvas
-        const thumbX = drawCV.width - thumb[0] * scaleX;  // 水平鏡像
-        const thumbY = thumb[1] * scaleY;
         const indexX = drawCV.width - index[0] * scaleX;
         const indexY = index[1] * scaleY;
 
-        drawCtx.beginPath();
-        drawCtx.arc(thumbX, thumbY, 10, 0, Math.PI * 2);
-        drawCtx.fillStyle = 'red';
-        drawCtx.fill();
+        if (handSide === currentHand) {
+            // pinch 手：畫食指和拇指 + 連線
+            const thumb = lm[4];
+            if (!thumb) return;
 
-        drawCtx.beginPath();
-        drawCtx.arc(indexX, indexY, 10, 0, Math.PI * 2);
-        drawCtx.fillStyle = 'blue';
-        drawCtx.fill();
+            const thumbX = drawCV.width - thumb[0] * scaleX;
+            const thumbY = thumb[1] * scaleY;
+
+            // 畫拇指
+            drawCtx.beginPath();
+            drawCtx.arc(thumbX, thumbY, 50, 0, Math.PI * 2);
+            drawCtx.fillStyle = '#F0A986';
+            drawCtx.fill();
+
+            // 畫食指
+            drawCtx.beginPath();
+            drawCtx.arc(indexX, indexY, 50, 0, Math.PI * 2);
+            drawCtx.fillStyle = '#F0A986';
+            drawCtx.fill();
+
+            // 畫連線
+            drawCtx.beginPath();
+            drawCtx.moveTo(thumbX, thumbY);
+            drawCtx.lineTo(indexX, indexY);
+            drawCtx.lineWidth = 20;
+            drawCtx.strokeStyle = '#F0A986';
+            drawCtx.stroke();
+
+        } else {
+            // 非 pinch 手：只畫食指，半徑依 Y 變化
+            // 假設 Y 越小 (靠上) 半徑越大，Y 越大 (靠下) 半徑越小
+            const radius = 100 * (1 - indexY / drawCV.height) + 10; // 最小 5，最大 25
+            drawCtx.beginPath();
+            drawCtx.arc(indexX, indexY, radius, 0, Math.PI * 2);
+            drawCtx.fillStyle = '#FFC408';
+            drawCtx.fill();
+        }
     });
 }
 
-export function drawLyric() {
 
-    if (!handData?.Right?.[8] || lyric == "") return; // 假設右手第8指是pinched點
+
+export function drawLyric(pinchHand) {
+
+    // 沒有 pinch 手或沒有歌詞就不畫
+    if (!pinchHand || lyric === "") return;
+
+    // 該手的 index finger 不存在就不畫
+    const finger = handData?.[pinchHand]?.[8];
+    if (!finger) return;
 
     const scaleX = drawCV.width / baseWidth;
     const scaleY = drawCV.height / baseHeight;
-    const [x, y] = [drawCV.width - handData.Right[8][0] * scaleX, handData.Right[8][1] * scaleY]; // 取得座標
+
+    const [x, y] = [
+        drawCV.width - finger[0] * scaleX,
+        finger[1] * scaleY
+    ];
 
     // 畫圓圈
     drawCtx.beginPath();
-    drawCtx.arc(x, y, 100, 0, 2 * Math.PI); // 半徑20
-    drawCtx.fillStyle = "rgba(255, 255, 0, 0.5)"; // 半透明黃色
+    drawCtx.arc(x, y, 60, 0, 2 * Math.PI);
+    drawCtx.fillStyle = '#91B493';
     drawCtx.fill();
-    drawCtx.lineWidth = 2;
-    drawCtx.strokeStyle = "orange";
+    drawCtx.lineWidth = 10;
+    drawCtx.strokeStyle = '#B5CAA0';
     drawCtx.stroke();
 
-    // 畫文字
-    drawCtx.font = "80px Arial";
+    drawCtx.font = "bold 80px Arial";
     drawCtx.fillStyle = "white";
     drawCtx.textAlign = "center";
     drawCtx.textBaseline = "middle";
-    drawCtx.fillText(lyric, x, y);
+    drawCtx.fillText(lyric, x, y + 10);
+
 }
+
 

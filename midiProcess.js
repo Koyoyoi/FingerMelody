@@ -69,7 +69,6 @@ export async function initSynth() {
 }
 
 // MIDI 播放 / 停止
-import { handData } from './main.js';
 export let lyric = "";
 let midiEvent = [], activeNotes = [], scheduledNotes = [];
 let midiIndex = 0
@@ -152,15 +151,15 @@ export function noteSeqOff() {
     activeNotes = [];
 }
 
-export function CCtrl(CP_Y) {
-    if (!handData?.Left?.[8]) {
+export function CCtrl(indexPos, CP_Y) {
+    if (!indexPos) {
         activeNotes.forEach(n => {
             synth.controllerChange(n.ch, 11, 100);
         });
         return;
     }
-    const x = handData.Left[8][0]; // X 座標
-    const y = handData.Left[8][1]; // Y 座標
+    const x = indexPos[0]; // X 座標
+    const y = indexPos[1]; // Y 座標
 
     // 音量 (CC#11)
     let vol = 1 - (y / window.innerHeight);
