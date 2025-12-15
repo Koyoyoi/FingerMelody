@@ -166,5 +166,4 @@ export function bubleUP(lyric) {
         // 超出畫面移除
         if (b.y < 0) bubleSeq.splice(i, 1);
     }
-    console.log(bubleSeq.length)
 }
