@@ -70,7 +70,7 @@ export async function initSynth() {
 import { bubleUP } from './visualDraw.js';
 export let lyric = "";
 let midiEvent = [], activeNotes = [], scheduledNotes = [];
-let midiIndex = 0
+let midiIndex = 0, program = -1;
 // midi Buttoms for play and stop
 const playBtn = document.getElementById("playBtn");
 const stopBtn = document.getElementById("stopBtn");
@@ -90,28 +90,28 @@ export function play() {
         if (!group || !group.notes) return;
 
         // group.notes 是物件，midi => event
-        Object.values(group.notes).forEach(event => {
-            const time = event.time;
+        Object.values(group.notes).forEach(evt => {
+            const time = evt.time;
             const noteOnTime = startTime + time;
-            const noteOffTime = noteOnTime + event.duration;
+            const noteOffTime = noteOnTime + evt.duration;
 
             // --- 排程 noteOn ---
             const onId = setTimeout(() => {
-                const ch = event.channel || 0;
-                synth.programChange(ch, event.program || 0);
-                synth.noteOn(ch, event.midi, Math.max(Math.floor(event.velocity * 127), 100));
+                const ch = evt.channel || 0;
+                synth.programChange(ch, program > 0 ? program : evt.program);
+                synth.noteOn(ch, evt.midi, Math.max(Math.floor(evt.velocity * 127), 100));
 
-                activeNotes.push({ ch, midi: event.midi });
+                activeNotes.push({ ch, midi: evt.midi });
             }, (noteOnTime - AC.currentTime) * 1000);
 
             scheduledNotes.push(onId);
 
             // --- 排程 noteOff ---
             const offId = setTimeout(() => {
-                const ch = event.channel || 0;
-                synth.noteOff(ch, event.midi);
+                const ch = evt.channel || 0;
+                synth.noteOff(ch, evt.midi);
 
-                activeNotes = activeNotes.filter(n => !(n.ch === ch && n.midi === event.midi));
+                activeNotes = activeNotes.filter(n => !(n.ch === ch && n.midi === evt.midi));
             }, (noteOffTime - AC.currentTime) * 1000);
 
             scheduledNotes.push(offId);
@@ -140,7 +140,7 @@ export function handPlay() {
 
     Object.values(group.notes).forEach(evt => {
         const ch = evt.channel || 0;
-        synth.programChange(ch, evt.program || 0);
+        synth.programChange(ch, program > 0 ? program : evt.program);
         synth.noteOn(ch, evt.midi, 100);
 
         activeNotes.push({ ch, midi: evt.midi });
@@ -307,6 +307,7 @@ export function URL(title) {
 async function getEvents(mid, divElement) {
     stop();
     midiIndex = 0;
+    program = -1;
 
     // 取得全局 overlay
     const songTitle = document.getElementById("songTitle");
@@ -599,7 +600,7 @@ export function InstrumentList() {
             const btn = document.createElement('button');
             btn.className = 'instrument-item';
             btn.textContent = `${inst.program}: ${inst.name}`;
-            btn.onclick = () => console.log('選擇樂器：', inst.name, 'Program:', inst.program);
+            btn.onclick = () => {console.log('選擇樂器：', inst.name, 'Program:', inst.program); program = inst.program};
             sublist.appendChild(btn);
         });
 
