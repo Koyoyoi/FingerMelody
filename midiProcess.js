@@ -577,19 +577,12 @@ const closeInstrument = document.getElementById('closeInstrument');
 const instrumentList = document.getElementById('instrumentList');
 
 // 顯示/隱藏清單
-showInstrumentBtn.onclick = () => {
-    instrumentListContainer.style.display =
-        instrumentListContainer.style.display === 'block' ? 'none' : 'block';
-};
+showInstrumentBtn.onclick = () => { instrumentListContainer.style.display = instrumentListContainer.style.display === 'block' ? 'none' : 'block'; };
 closeInstrument.onclick = () => instrumentListContainer.style.display = 'none';
-window.addEventListener('click', e => {
-    if (e.target === instrumentListContainer) instrumentListContainer.style.display = 'none';
-});
-window.addEventListener('keydown', e => {
-    if (e.key === 'Escape') instrumentListContainer.style.display = 'none';
-});
+window.addEventListener('click', e => { if (e.target === instrumentListContainer) instrumentListContainer.style.display = 'none'; });
+window.addEventListener('keydown', e => { if (e.key === 'Escape') instrumentListContainer.style.display = 'none'; });
 
-// 生成手風琴
+// 生成列表
 export function InstrumentList() {
     instrumentList.innerHTML = '';
     let currentOpen = null;
