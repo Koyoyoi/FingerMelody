@@ -113,6 +113,7 @@ async function initSystem() {
     await setupMediaPipe();
     await midi.loadFiles();
     await midi.initSynth();
+    midi.InstrumentList();
     const urlParams = new URLSearchParams(window.location.search);
     const title = urlParams.get("midi");
     if (title) { midi.URL(title); }

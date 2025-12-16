@@ -184,31 +184,28 @@ body {
     margin-bottom: 10px;
 }
 
-/* Instrument list */
+/* Instrument list 容器 */
 #instrumentListContainer {
     display: none;
     position: fixed;
     right: 20px;
     top: 80px;
     width: 260px;
+    max-height: 70vh; /* 限制高度，超過可滾動 */
     background: #fff;
     color: #000;
     border-radius: 12px;
     border: 1px solid #ddd;
     overflow: hidden;
     z-index: 20;
-}
-
-/* 樂器列表內容 */
-#instrumentList {
-    padding: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    overflow-y: auto;
 }
 
-/* 單一樂器項目 */
-.instrument-item {
+/* 類別按鈕 */
+.category-item {
     padding: 10px 12px;
     border-radius: 8px;
     border: 1px solid #eee;
@@ -216,6 +213,44 @@ body {
     cursor: pointer;
     font-weight: bold;
     font-size: 14px;
+    text-align: left;
+    transition: background 0.2s ease, transform 0.2s ease;
+    user-select: none;
+}
+
+/* 類別懸停 */
+.category-item:hover {
+    background: #FFC408;
+    color: #000;
+    transform: translateX(4px);
+}
+
+/* 樂器子列表 */
+.instrument-sublist {
+    max-height: 0;               /* 初始收起 */
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-left: 10px;
+    padding: 0;                  /* 收起時無 padding */
+}
+
+/* 展開狀態 */
+.instrument-sublist.show {
+    max-height: 1000px;          /* 足夠高度，動畫自然展開 */
+    padding: 6px 0;              /* 展開時增加上下間距 */
+}
+
+/* 樂器按鈕 */
+.instrument-item {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #eee;
+    background: #f0f0f0;
+    cursor: pointer;
+    font-size: 13px;
     text-align: left;
     transition: all 0.2s ease;
 }

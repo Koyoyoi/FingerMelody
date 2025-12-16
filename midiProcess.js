@@ -16,9 +16,7 @@ function tryStartAC() {
 }
 
 // 監聽任意使用者互動
-["pointerdown", "keydown", "touchstart"].forEach(evt =>
-    document.body.addEventListener(evt, tryStartAC, { once: true })
-);
+["pointerdown", "keydown", "touchstart"].forEach(evt => document.body.addEventListener(evt, tryStartAC, { once: true }));
 
 function setupAC() {
     if (!AC) {
@@ -77,9 +75,9 @@ let midiIndex = 0
 const playBtn = document.getElementById("playBtn");
 const stopBtn = document.getElementById("stopBtn");
 // 播放 MIDI
-playBtn.addEventListener("click", async () => { midi.play(); });
+playBtn.addEventListener("click", async () => { play(); });
 // 停止 MIDI
-stopBtn.addEventListener("click", () => midi.stop());
+stopBtn.addEventListener("click", () => stop());
 
 export function play() {
     if (!synth || !midiEvent || midiEvent.length === 0) return;
@@ -409,15 +407,219 @@ async function getEvents(mid, divElement) {
     }
 }
 
-// instrument list
+
+const instruments = {
+    "鋼琴": [
+        { "program": 0, "name": "原聲大鋼琴" },
+        { "program": 1, "name": "明亮鋼琴" },
+        { "program": 2, "name": "電鋼琴" },
+        { "program": 3, "name": "搖滾鋼琴" },
+        { "program": 4, "name": "電鋼琴1" },
+        { "program": 5, "name": "電鋼琴2" },
+        { "program": 6, "name": "羽管鍵琴" },
+        { "program": 7, "name": "電琴" }
+    ],
+    "敲擊鍵盤": [
+        { "program": 8, "name": "鋼片琴" },
+        { "program": 9, "name": "鐘琴" },
+        { "program": 10, "name": "音樂盒" },
+        { "program": 11, "name": "顫音琴" },
+        { "program": 12, "name": "馬林巴琴" },
+        { "program": 13, "name": "木琴" },
+        { "program": 14, "name": "管鐘" },
+        { "program": 15, "name": "三角鐵" }
+    ],
+    "風琴": [
+        { "program": 16, "name": "抽拉風琴" },
+        { "program": 17, "name": "敲擊風琴" },
+        { "program": 18, "name": "搖滾風琴" },
+        { "program": 19, "name": "教堂風琴" },
+        { "program": 20, "name": "簧風琴" },
+        { "program": 21, "name": "手風琴" },
+        { "program": 22, "name": "口琴" },
+        { "program": 23, "name": "探戈手風琴" }
+    ],
+    "吉他": [
+        { "program": 24, "name": "原聲吉他（尼龍弦）" },
+        { "program": 25, "name": "原聲吉他（鋼弦）" },
+        { "program": 26, "name": "電吉他（爵士）" },
+        { "program": 27, "name": "電吉他（乾淨音）" },
+        { "program": 28, "name": "電吉他（弱音）" },
+        { "program": 29, "name": "過載吉他" },
+        { "program": 30, "name": "失真吉他" },
+        { "program": 31, "name": "吉他泛音" }
+    ],
+    "低音": [
+        { "program": 32, "name": "原聲低音" },
+        { "program": 33, "name": "電貝斯（手指）" },
+        { "program": 34, "name": "電貝斯（撥片）" },
+        { "program": 35, "name": "無品貝斯" },
+        { "program": 36, "name": "拍擊貝斯1" },
+        { "program": 37, "name": "拍擊貝斯2" },
+        { "program": 38, "name": "合成貝斯1" },
+        { "program": 39, "name": "合成貝斯2" }
+    ],
+    "弦樂": [
+        { "program": 40, "name": "小提琴" },
+        { "program": 41, "name": "中提琴" },
+        { "program": 42, "name": "大提琴" },
+        { "program": 43, "name": "低音大提琴" },
+        { "program": 44, "name": "顫音弦樂" },
+        { "program": 45, "name": "撥弦弦樂" },
+        { "program": 46, "name": "管弦豎琴" },
+        { "program": 47, "name": "定音鼓" }
+    ],
+    "合奏": [
+        { "program": 48, "name": "弦樂合奏1" },
+        { "program": 49, "name": "弦樂合奏2" },
+        { "program": 50, "name": "合成弦樂1" },
+        { "program": 51, "name": "合成弦樂2" },
+        { "program": 52, "name": "人聲合唱Aah" },
+        { "program": 53, "name": "人聲Ooh" },
+        { "program": 54, "name": "合成人聲合唱" },
+        { "program": 55, "name": "管弦打擊音" }
+    ],
+    "銅管": [
+        { "program": 56, "name": "小號" },
+        { "program": 57, "name": "長號" },
+        { "program": 58, "name": "大號" },
+        { "program": 59, "name": "弱音小號" },
+        { "program": 60, "name": "法國號" },
+        { "program": 61, "name": "銅管合奏" },
+        { "program": 62, "name": "合成銅管1" },
+        { "program": 63, "name": "合成銅管2" }
+    ],
+    "木管": [
+        { "program": 64, "name": "高音薩克斯" },
+        { "program": 65, "name": "中音薩克斯" },
+        { "program": 66, "name": "次中音薩克斯" },
+        { "program": 67, "name": "低音薩克斯" },
+        { "program": 68, "name": "雙簧管" },
+        { "program": 69, "name": "英國號" },
+        { "program": 70, "name": "巴松管" },
+        { "program": 71, "name": "單簧管" }
+    ],
+    "長笛類": [
+        { "program": 72, "name": "短笛" },
+        { "program": 73, "name": "長笛" },
+        { "program": 74, "name": "直笛" },
+        { "program": 75, "name": "泛笛" },
+        { "program": 76, "name": "吹瓶" },
+        { "program": 77, "name": "尺八" },
+        { "program": 78, "name": "口哨" },
+        { "program": 79, "name": "陶笛" }
+    ],
+    "合成音 Lead": [
+        { "program": 80, "name": "主音1（方波）" },
+        { "program": 81, "name": "主音2（鋸齒波）" },
+        { "program": 82, "name": "主音3（玩具音）" },
+        { "program": 83, "name": "主音4（輕音）" },
+        { "program": 84, "name": "主音5（Charang）" },
+        { "program": 85, "name": "主音6（人聲）" },
+        { "program": 86, "name": "主音7（五度和音）" },
+        { "program": 87, "name": "主音8（低音+主音）" }
+    ],
+    "合成音 Pad": [
+        { "program": 88, "name": "合成音墊1（新世代）" },
+        { "program": 89, "name": "合成音墊2（溫暖）" },
+        { "program": 90, "name": "合成音墊3（多音合成）" },
+        { "program": 91, "name": "合成音墊4（合唱）" },
+        { "program": 92, "name": "合成音墊5（拉弦）" },
+        { "program": 93, "name": "合成音墊6（金屬質感）" },
+        { "program": 94, "name": "合成音墊7（光環）" },
+        { "program": 95, "name": "合成音墊8（掃掠）" }
+    ],
+    "合成音效果": [
+        { "program": 96, "name": "效果1（雨）" },
+        { "program": 97, "name": "效果2（配樂）" },
+        { "program": 98, "name": "效果3（水晶）" },
+        { "program": 99, "name": "效果4（氛圍）" },
+        { "program": 100, "name": "效果5（明亮）" },
+        { "program": 101, "name": "效果6（小妖精）" },
+        { "program": 102, "name": "效果7（回聲）" },
+        { "program": 103, "name": "效果8（科幻）" }
+    ],
+    "民族樂器": [
+        { "program": 104, "name": "錫塔琴" },
+        { "program": 105, "name": "班卓琴" },
+        { "program": 106, "name": "三味線" },
+        { "program": 107, "name": "箏" },
+        { "program": 108, "name": "卡林巴琴" },
+        { "program": 109, "name": "風笛" },
+        { "program": 110, "name": "小提琴（民俗）" },
+        { "program": 111, "name": "山奈" }
+    ],
+    "打擊樂": [
+        { "program": 112, "name": "鈴鐺" },
+        { "program": 113, "name": "阿哥哥" },
+        { "program": 114, "name": "鋼鼓" },
+        { "program": 115, "name": "木魚" },
+        { "program": 116, "name": "太鼓" },
+        { "program": 117, "name": "旋律小鼓" },
+        { "program": 118, "name": "合成鼓" },
+        { "program": 119, "name": "反向鈸" }
+    ],
+    "音效": [
+        { "program": 120, "name": "吉他泛音噪音" },
+        { "program": 121, "name": "氣息聲" },
+        { "program": 122, "name": "海浪" },
+        { "program": 123, "name": "鳥叫" },
+        { "program": 124, "name": "電話鈴聲" },
+        { "program": 125, "name": "直升機" },
+        { "program": 126, "name": "掌聲" },
+        { "program": 127, "name": "槍聲" }
+    ]
+}
+
 const showInstrumentBtn = document.getElementById('showInstrumentBtn');
 const instrumentListContainer = document.getElementById('instrumentListContainer');
 const closeInstrument = document.getElementById('closeInstrument');
+const instrumentList = document.getElementById('instrumentList');
 
+// 顯示/隱藏清單
 showInstrumentBtn.onclick = () => {
-    instrumentListContainer.style.display = 'block';
+    instrumentListContainer.style.display =
+        instrumentListContainer.style.display === 'block' ? 'none' : 'block';
 };
+closeInstrument.onclick = () => instrumentListContainer.style.display = 'none';
+window.addEventListener('click', e => {
+    if (e.target === instrumentListContainer) instrumentListContainer.style.display = 'none';
+});
+window.addEventListener('keydown', e => {
+    if (e.key === 'Escape') instrumentListContainer.style.display = 'none';
+});
 
-closeInstrument.onclick = () => {
-    instrumentListContainer.style.display = 'none';
-};
+// 生成手風琴
+export function InstrumentList() {
+    instrumentList.innerHTML = '';
+    let currentOpen = null;
+
+    for (let category in instruments) {
+        const categoryBtn = document.createElement('div');
+        categoryBtn.className = 'category-item';
+        categoryBtn.textContent = category;
+
+        const sublist = document.createElement('div');
+        sublist.className = 'instrument-sublist';
+
+        instruments[category].forEach(inst => {
+            const btn = document.createElement('button');
+            btn.className = 'instrument-item';
+            btn.textContent = `${inst.program}: ${inst.name}`;
+            btn.onclick = () => console.log('選擇樂器：', inst.name, 'Program:', inst.program);
+            sublist.appendChild(btn);
+        });
+
+        categoryBtn.onclick = () => {
+            if (currentOpen && currentOpen !== sublist) {
+                currentOpen.classList.remove('show');
+            }
+            sublist.classList.toggle('show');
+            currentOpen = sublist.classList.contains('show') ? sublist : null;
+        };
+
+        instrumentList.appendChild(categoryBtn);
+        instrumentList.appendChild(sublist);
+    }
+}
+
