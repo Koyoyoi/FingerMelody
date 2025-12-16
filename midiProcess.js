@@ -73,6 +73,13 @@ import { bubleUP } from './visualDraw.js';
 export let lyric = "";
 let midiEvent = [], activeNotes = [], scheduledNotes = [];
 let midiIndex = 0
+// midi Buttoms for play and stop
+const playBtn = document.getElementById("playBtn");
+const stopBtn = document.getElementById("stopBtn");
+// 播放 MIDI
+playBtn.addEventListener("click", async () => { midi.play(); });
+// 停止 MIDI
+stopBtn.addEventListener("click", () => midi.stop());
 
 export function play() {
     if (!synth || !midiEvent || midiEvent.length === 0) return;
@@ -186,6 +193,15 @@ export function CCtrl(indexPos, CP_Y) {
 }
 
 // MIDI list
+const showListBtn = document.getElementById("showListBtn");
+const midiListContainer = document.getElementById("midiListContainer");
+const closeList = document.getElementById("closeList");
+
+// 開啟 MIDI 清單
+showListBtn.addEventListener("click", async () => { midiListContainer.style.display = "flex"; });
+// 關閉 MIDI 清單
+closeList.addEventListener("click", () => midiListContainer.style.display = "none");
+
 let midiList = [];
 let isFullyLoaded = false;
 const midiListDiv = document.getElementById("midiList");
@@ -393,3 +409,15 @@ async function getEvents(mid, divElement) {
     }
 }
 
+// instrument list
+const showInstrumentBtn = document.getElementById('showInstrumentBtn');
+const instrumentListContainer = document.getElementById('instrumentListContainer');
+const closeInstrument = document.getElementById('closeInstrument');
+
+showInstrumentBtn.onclick = () => {
+    instrumentListContainer.style.display = 'block';
+};
+
+closeInstrument.onclick = () => {
+    instrumentListContainer.style.display = 'none';
+};

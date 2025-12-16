@@ -1,22 +1,6 @@
 import * as midi from "./midiProcess.js";
 import { detectHand, setupMediaPipe } from "./MediaPipe/MediaPipe.js";
 
-// MIDI list
-const showListBtn = document.getElementById("showListBtn");
-const midiListContainer = document.getElementById("midiListContainer");
-const closeList = document.getElementById("closeList");
-const playBtn = document.getElementById("playBtn");
-const stopBtn = document.getElementById("stopBtn");
-
-// 開啟 MIDI 清單
-showListBtn.addEventListener("click", async () => { midiListContainer.style.display = "flex"; });
-// 關閉 MIDI 清單
-closeList.addEventListener("click", () => midiListContainer.style.display = "none");
-// 播放 MIDI
-playBtn.addEventListener("click", async () => { midi.play(); });
-// 停止 MIDI
-stopBtn.addEventListener("click", () => midi.stop());
-
 // WebCam
 export let video = document.createElement("video");
 video.autoplay = true;
