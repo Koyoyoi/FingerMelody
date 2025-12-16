@@ -43,36 +43,41 @@ export function FingerPoint(pinchHand) {
     const scaleY = drawCV.height / baseHeight;
 
     ['Left', 'Right'].forEach(handSide => {
-        const lm = handData[handSide];
-        if (!lm || lm.length < 9) return;
+        const lm = handData?.[handSide];
+        if (!Array.isArray(lm) || lm.length < 9) return;
 
         const index = lm[8];
-        if (!index) return;
+        if (!index || index.length < 2) return;
 
         const indexX = drawCV.width - index[0] * scaleX;
         const indexY = index[1] * scaleY;
 
+        // 座標合法性檢查（防 NaN / undefined）
+        if (!Number.isFinite(indexX) || !Number.isFinite(indexY)) return;
+
         if (handSide === currentHand) {
-            // pinch 手：畫食指和拇指 + 連線
+            // pinch 手
             const thumb = lm[4];
-            if (!thumb) return;
+            if (!thumb || thumb.length < 2) return;
 
             const thumbX = drawCV.width - thumb[0] * scaleX;
             const thumbY = thumb[1] * scaleY;
 
-            // 畫拇指
+            if (!Number.isFinite(thumbX) || !Number.isFinite(thumbY)) return;
+
+            // 拇指
             drawCtx.beginPath();
             drawCtx.arc(thumbX, thumbY, 30, 0, Math.PI * 2);
             drawCtx.fillStyle = '#F0A98680';
             drawCtx.fill();
 
-            // 畫食指
+            // 食指
             drawCtx.beginPath();
             drawCtx.arc(indexX, indexY, 30, 0, Math.PI * 2);
             drawCtx.fillStyle = '#F0A98680';
             drawCtx.fill();
 
-            // 畫連線
+            // 連線
             drawCtx.beginPath();
             drawCtx.moveTo(thumbX, thumbY);
             drawCtx.lineTo(indexX, indexY);
@@ -81,15 +86,19 @@ export function FingerPoint(pinchHand) {
             drawCtx.stroke();
 
         } else {
-            // 非 pinch 手：只畫食指，半徑依 Y 變化
-            // 假設 Y 越小 (靠上) 半徑越大，Y 越大 (靠下) 半徑越小
-            const radius = 50 * (1 - indexY / drawCV.height); // 最小 5，最大 25
+            // 非 pinch 手
+            const radius = Math.max(
+                10,
+                50 * (1 - indexY / drawCV.height)
+            );
+
             drawCtx.beginPath();
             drawCtx.arc(indexX, indexY, radius, 0, Math.PI * 2);
             drawCtx.fillStyle = '#FFC40880';
             drawCtx.fill();
         }
     });
+
 }
 
 let lyricPos = { x: 0, y: 0 };
