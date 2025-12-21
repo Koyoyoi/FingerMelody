@@ -38,8 +38,11 @@ function isPinched(hand) {
 import { visualStream, FingerPoint, drawLyric, bubleUP } from "./visualDraw.js";
 
 export let handData = { "Left": [], "Right": [] };
-let pinchActive = false;
-let channelPressure_Y;
+let prevPinch = false, activePinch;
+let prevRPinched = false;
+let prevLPinched = false;
+
+let chPressure_Y;
 
 async function mainLoop() {
     visualStream();
@@ -50,60 +53,93 @@ async function mainLoop() {
     await detectHand();
 
     // pinch detect
-    const RPinched = handData.Right && handData.Right.length > 0
-        ? isPinched(handData.Right)
-        : false;
+    const RPinched = !!(handData.Right?.length && isPinched(handData.Right));
+    const LPinched = !!(handData.Left?.length && isPinched(handData.Left));
 
-    const LPinched = handData.Left && handData.Left.length > 0
-        ? isPinched(handData.Left)
-        : false;
+    // ⭐ 新 pinch（edge）
+    const RPinchStart = RPinched && !prevRPinched;
+    const LPinchStart = LPinched && !prevLPinched;
 
-    // 右手 pinch → 左手 CC
-    if (RPinched) {
-        // 更新音量（左手控制）
-        if (handData?.Left?.[8]?.[0] != null) {
-            midi.CCtrl(handData.Left[8], channelPressure_Y);
-        }
+    // 第一隻手 pinch
+    if (!prevPinch) {
+        if (RPinchStart) {
+            prevPinch = true;
+            activePinch = "Right";
 
-        if (!pinchActive) {
-            pinchActive = true;
             if (handData?.Left?.[8]?.[0] != null) {
-                channelPressure_Y = handData.Left[8][0];
+                chPressure_Y = handData.Left[8][0];
+            }
+            midi.handPlay();
+        }
+        else if (LPinchStart) {
+            prevPinch = true;
+            activePinch = "Left";
+
+            if (handData?.Right?.[8]?.[0] != null) {
+                chPressure_Y = handData.Right[8][0];
             }
             midi.handPlay();
         }
     }
 
-    //左手 pinch 
-    if (LPinched) {
-        // 更新音量（右手控制）
-        if (handData?.Right?.[8]?.[0] != null) {
-            midi.CCtrl(handData.Right[8], channelPressure_Y);
+    // pinch 時，另一隻手「新 pinch」
+    if (prevPinch) {
+        // 原本右手 → 左手「新 pinch」
+        if (activePinch === "Right" && LPinchStart) {
+            activePinch = "Left";
+            midi.noteSeqOff();
+            midi.handPlay();
         }
 
-        if (!pinchActive) {
-            pinchActive = true;
-            if (handData?.Right?.[8]?.[0] != null) {
-                channelPressure_Y = handData.Right[8][0];
-            } midi.handPlay();
+        // 原本左手 → 右手「新 pinch」
+        if (activePinch === "Left" && RPinchStart) {
+            activePinch = "Right";
+            midi.noteSeqOff();
+            midi.handPlay();
+        }
+
+        // active 是 Left，但 Left 已放開、Right 還在
+        if (activePinch === "Left" && !LPinched && RPinched) {
+            activePinch = "Right";
+        }
+
+        // active 是 Right，但 Right 已放開、Left 還在
+        if (activePinch === "Right" && !RPinched && LPinched) {
+            activePinch = "Left";
+        }
+
+        // 右手在彈 → 左手控制 CC
+        if (activePinch === "Right" && handData?.Left?.[8]?.[0] != null) {
+            midi.CCtrl(handData.Left[8], chPressure_Y);
+        }
+
+        // 左手在彈 → 右手控制 CC
+        if (activePinch === "Left" && handData?.Right?.[8]?.[0] != null) {
+            midi.CCtrl(handData.Right[8], chPressure_Y);
         }
     }
 
-    //Pinch 結束（兩手都沒 pinch）
-    if (!RPinched && !LPinched && pinchActive) {
-        pinchActive = false;
+    // 全放開 → 停止
+    if (!RPinched && !LPinched && prevPinch) {
+        prevPinch = false;
+        activePinch = null;
         midi.noteSeqOff();
     }
 
     FingerPoint();
     bubleUP();
-    if (RPinched) {
+
+    if (RPinched && activePinch === "Right") {
         drawLyric("Right");
         FingerPoint("Right");
-    } else if (LPinched) {
+    }
+    else if (LPinched && activePinch === "Left") {
         drawLyric("Left");
         FingerPoint("Left");
     }
+
+    prevRPinched = RPinched;
+    prevLPinched = LPinched;
 
     requestAnimationFrame(mainLoop);
 }
