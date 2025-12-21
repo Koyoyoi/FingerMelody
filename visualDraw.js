@@ -120,10 +120,10 @@ export function drawLyric(pinchHand) {
     // 畫圓圈
     drawCtx.beginPath();
     drawCtx.arc(lyricPos.x, lyricPos.y, 30, 0, 2 * Math.PI);
-    drawCtx.fillStyle = '#91B49380';
+    drawCtx.fillStyle = '#4A225D80';
     drawCtx.fill();
     drawCtx.lineWidth = 5;
-    drawCtx.strokeStyle = '#B5CAA080';
+    drawCtx.strokeStyle = '#4A225D80';
     drawCtx.stroke();
 
     drawCtx.font = "bold 40px Arial";
@@ -142,7 +142,7 @@ export function bubleUP(lyric) {
             lyric: lyric,
             x: lyricPos.x,
             y: lyricPos.y,
-            speedY: 5 // 每幀上升 2px
+            speedY: Math.random() * 6 + 2
         });
         return;
     }
@@ -159,10 +159,10 @@ export function bubleUP(lyric) {
         // 畫圓圈
         drawCtx.beginPath();
         drawCtx.arc(b.x, b.y, 30, 0, 2 * Math.PI);
-        drawCtx.fillStyle = '#91B49380';
+        drawCtx.fillStyle = '#4A225D80';
         drawCtx.fill();
         drawCtx.lineWidth = 5;
-        drawCtx.strokeStyle = '#B5CAA080';
+        drawCtx.strokeStyle = '#4A225D80';
         drawCtx.stroke();
 
         // 畫文字
