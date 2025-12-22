@@ -1,9 +1,8 @@
 import * as spessasynthLib from 'https://cdn.jsdelivr.net/npm/spessasynth_lib@4.0.18/+esm';
 const { WorkletSynthesizer } = spessasynthLib;
 
-let AC; // 延遲建立
+let AC = new (window.AudioContext || window.webkitAudioContext)();
 let masterGain, comp;
-
 let AC_started = false;
 
 function tryStartAC() {
@@ -15,13 +14,8 @@ function tryStartAC() {
     });
 }
 
-// 監聽任意使用者互動
-["pointerdown", "keydown", "touchstart"].forEach(evt => document.body.addEventListener(evt, tryStartAC, { once: true }));
-
 function setupAC() {
     if (!AC) {
-        AC = new (window.AudioContext || window.webkitAudioContext)();
-
         // masterGain
         masterGain = AC.createGain();
         masterGain.gain.value = 1.8;
@@ -37,6 +31,7 @@ function setupAC() {
         // 連接順序
         comp.connect(masterGain).connect(AC.destination);
     }
+    tryStartAC();
 }
 
 // 初始化 SpessaSynth 
@@ -65,6 +60,9 @@ export async function initSynth() {
 
     console.log("🎹 Synth 初始化完成");
 }
+
+// 監聽任意使用者互動
+["pointerdown", "keydown", "touchstart"].forEach(evt => document.body.addEventListener(evt, tryStartAC, { once: true }));
 
 // MIDI 播放 / 停止
 import { bubleUP } from './visualDraw.js';
@@ -485,7 +483,7 @@ window.addEventListener('click', e => { if (e.target === instrumentListContainer
 window.addEventListener('keydown', e => { if (e.key === 'Escape') instrumentListContainer.style.display = 'none'; });
 
 // 渲染樂器列表
-function InstrumentList() {
+async function InstrumentList() {
     instrumentList.innerHTML = '';
     let currentOpen = null;
 
