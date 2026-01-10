@@ -4,16 +4,16 @@ const { WorkletSynthesizer } = spessasynthLib;
 let AC, masterGain, comp;
 let AC_started = false;
 
-function tryStartAC() {
+async function tryStartAC() {
     if (AC_started) return;
-    if (!AC) setupAC();
+    if (!AC) await setupAC();
     AC.resume().then(() => {
         console.log("🎹 AudioContext 已啟動");
         AC_started = true;
     });
 }
 
-function setupAC() {
+async function setupAC() {
     if (!AC) {
         // Audio Context
         AC = new (window.AudioContext || window.webkitAudioContext)();
