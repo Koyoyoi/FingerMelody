@@ -1,8 +1,7 @@
 import * as spessasynthLib from 'https://cdn.jsdelivr.net/npm/spessasynth_lib@4.0.18/+esm';
 const { WorkletSynthesizer } = spessasynthLib;
 
-let AC = new (window.AudioContext || window.webkitAudioContext)();
-let masterGain, comp;
+let AC, masterGain, comp;
 let AC_started = false;
 
 function tryStartAC() {
@@ -16,6 +15,9 @@ function tryStartAC() {
 
 function setupAC() {
     if (!AC) {
+        // Audio Context
+        AC = new (window.AudioContext || window.webkitAudioContext)();
+
         // masterGain
         masterGain = AC.createGain();
         masterGain.gain.value = 1.8;
