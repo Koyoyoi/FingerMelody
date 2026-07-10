@@ -14,9 +14,7 @@
 
 ---
 
-## 🌐 線上 Demo
-
-你可以直接在 GitHub Pages 启动 FingerMelody：  
+## 🌐 線上 Demo  
 👉 https://koyoyoi.github.io/FingerMelody/
 
 ---
