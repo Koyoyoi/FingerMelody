@@ -1,4 +1,4 @@
-import * as spessasynthLib from 'https://cdn.jsdelivr.net/npm/spessasynth_lib@4.0.18/+esm';
+import * as spessasynthLib from 'https://cdn.jsdelivr.net/npm/spessasynth_lib@4.3.8/+esm';
 const { WorkletSynthesizer } = spessasynthLib;
 
 let AC, masterGain, comp;
